@@ -63,13 +63,7 @@ def test():
             ('+3V3',            3.25, 3.35),
             ('+2V5',            2.45, 2.55),
             ('+1V1',            1.05, 1.15),
-            ('VCCRAM',          3.25, 3.35),
-            ('CONTROL_PHY_3V3', 3.25, 3.35),
-            ('CONTROL_PHY_1V8', 1.75, 1.85),
-            ('AUX_PHY_3V3',     3.25, 3.35),
-            ('AUX_PHY_1V8',     1.75, 1.85),
-            ('TARGET_PHY_3V3',  3.25, 3.35),
-            ('TARGET_PHY_3V3',  3.25, 3.35)):
+            ('VCCRAM',          3.25, 3.35)):
         test_voltage(testpoint, minimum, maximum)
 
     # Check 60MHz clock.
@@ -92,6 +86,16 @@ def test():
 
     # Configure FPGA with test gateware.
     configure_fpga()
+
+    # Check all PHY supply voltages.
+    for (testpoint, minimum, maximum) in (
+            ('CONTROL_PHY_3V3', 3.25, 3.35),
+            ('CONTROL_PHY_1V8', 1.75, 1.85),
+            ('AUX_PHY_3V3',     3.25, 3.35),
+            ('AUX_PHY_1V8',     1.75, 1.85),
+            ('TARGET_PHY_3V3',  3.25, 3.35),
+            ('TARGET_PHY_3V3',  3.25, 3.35)):
+        test_voltage(testpoint, minimum, maximum)
 
     # Run self-test routine. Should include:
     #
