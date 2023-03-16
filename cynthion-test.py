@@ -114,20 +114,7 @@ def test():
     # TODO: VBUS voltage/current monitoring testing and calibration.
 
     # Test FPGA LEDs.
-    for i in range(len(fpga_leds)):
-
-        # Turn on LED
-        set_fpga_led(i, True)
-
-        # Check that this and only this LED is on, with the correct voltage.
-        for j, (testpoint, minimum, maximum) in enumerate(fpga_leds):
-            if i == j:
-                test_voltage(testpoint, minimum, maximum)
-            else:
-                test_voltage(testpoint, 0, 0.05)
-
-        # Turn off LED
-        set_fpga_led(i, False)
+    test_leds(fpga_leds, set_fpga_led)
 
     # Tell the FPGA to hand off the control port to the MCU.
     request_control_handoff()
@@ -136,20 +123,7 @@ def test():
     test_apollo()
 
     # Test debug LEDs.
-    for i in range(len(debug_leds)):
-
-        # Turn on LED
-        set_debug_led(i, True)
-
-        # Check that this and only this LED is on, with the correct voltage.
-        for j, (testpoint, minimum, maximum) in enumerate(debug_leds):
-            if i == j:
-                test_voltage(testpoint, minimum, maximum)
-            else:
-                test_voltage(testpoint, 0, 0.05)
-
-        # Turn off LED
-        set_debug_led(i, False)
+    test_leds(debug_led, set_debug_led)
 
     # Flash analyzer bitstream.
     flash_analyzer()
@@ -163,6 +137,24 @@ def test():
     # TODO: Speed detection?
 
     # TODO: Manual button tests & LED visual checks.
+
+
+# Helper functions for testing.
+
+def test_leds(leds, set_led)
+    for i in range(len(leds)):
+        # Turn on LED
+        set_led(i, True)
+
+        # Check that this and only this LED is on, with the correct voltage.
+        for j, (testpoint, minimum, maximum) in enumerate(leds):
+            if i == j:
+                test_voltage(testpoint, minimum, maximum)
+            else:
+                test_voltage(testpoint, 0, 0.05)
+
+        # Turn off LED
+        set_led(i, False)
 
 
 # Static data required for tests.
