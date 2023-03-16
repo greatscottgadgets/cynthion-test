@@ -79,6 +79,9 @@ def test():
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan()
 
+    # Flash analyzer bitstream.
+    flash_analyzer()
+
     # Configure FPGA with test gateware.
     configure_fpga()
 
@@ -124,9 +127,6 @@ def test():
 
     # Test debug LEDs.
     test_leds(debug_led, set_debug_led)
-
-    # Flash analyzer bitstream.
-    flash_analyzer()
 
     # Request visual check of LEDs.
     request_led_check()
