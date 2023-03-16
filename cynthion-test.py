@@ -128,6 +128,9 @@ def test():
     # Flash analyzer bitstream.
     flash_analyzer()
 
+    # Request visual check of LEDs.
+    request_led_check()
+
     # Power cycle and check analyzer shows up.
     connect_supply_to(None)
     sleep(0.5)
@@ -136,7 +139,7 @@ def test():
 
     # TODO: Speed detection?
 
-    # TODO: Manual button tests & LED visual checks.
+    # TODO: Manual button tests.
 
 
 # Helper functions for testing.
@@ -156,6 +159,9 @@ def test_leds(leds, set_led)
         # Turn off LED
         set_led(i, False)
 
+    # Turn on all LEDs for visual check.
+    for i in range(len(leds)):
+        set_led(i, True)
 
 # Static data required for tests.
 
