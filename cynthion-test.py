@@ -16,11 +16,11 @@ def test():
         check_for_short(port, 'CC2',  'VBUS')
 
     # Test supplying VBUS through CONTROL and AUX ports.
-    for port in ('CONTROL', 'AUX'):
+    for supply_port in ('CONTROL', 'AUX'):
 
         # Connect 5V supply via this port.
         set_supply(5.0, 0.1)
-        connect_supply_to(port)
+        connect_supply_to(supply_port)
 
         # Expected diode drop range:
         drop_min, drop_max = 0.2, 0.3
@@ -45,6 +45,11 @@ def test():
 
             # Check voltage at +5V rail.
             test_voltage('+5V', minimum, maximum)
+
+            # Check for leakage to other ports.
+            for port in ('CONTROL', 'AUX', 'TARGET-C', 'TARGET-A'):
+                if port != supply_port:
+                    test_leakage(port)
 
         disconnect_supply_and_discharge()
 
