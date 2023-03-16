@@ -129,13 +129,58 @@ def test():
 
     # TODO: VBUS voltage/current monitoring testing and calibration.
 
-    # TODO: LED forward voltage testing.
+    # Test FPGA LEDs.
+    fpga_leds = (
+        ('D7_Vf', 2.7, 2.9), # OSVX0603C1E, Purple
+        ('D6_Vf', 2.5, 2.7), # ORH-B36G, Blue
+        ('D5_Vf', 2.7, 2.9), # ORH-G36G, Green
+        ('D4_Vf', 1.9, 2.1), # E6C0603UYAC1UDA, Yellow
+        ('D3_Vf', 1.9, 2.1), # E6C0603SEAC1UDA, Orange
+        ('D2_Vf', 1.7, 1.9)) # OSR50603C1E, Red
+
+    for i in range(len(fpga_leds)):
+
+        # Turn on LED
+        set_fpga_led(i, True)
+
+        # Check that this and only this LED is on, with the correct voltage.
+        for j, (testpoint, minimum, maximum) in enumerate(fpga_leds):
+            if i == j:
+                test_voltage(testpoint, minimum, maximum)
+            else:
+                test_voltage(testpoint, 0, 0.05)
+
+        # Turn off LED
+        set_fpga_led(i, False)
 
     # Tell the FPGA to hand off the control port to the MCU.
     request_control_handoff()
 
     # Check Apollo debugger shows up.
     test_apollo()
+
+    # Test debug LEDs.
+    debug_leds = (
+        ('D10_Vf', 3.0, 3.2), # MHT192WDT-ICE, Ice Blue
+        ('D11_Vf', 2.7, 2.9), # OSK40603C1E, Pink
+        ('D12_Vf', 2.7, 2.9), # ORH-W46G, White
+        ('D13_Vf', 2.7, 2.9), # OSK40603C1E, Pink
+        ('D14_Vf', 3.0, 3.2)) # MHT192WDT-ICE, Ice Blue
+
+    for i in range(len(debug_leds)):
+
+        # Turn on LED
+        set_debug_led(i, True)
+
+        # Check that this and only this LED is on, with the correct voltage.
+        for j, (testpoint, minimum, maximum) in enumerate(debug_leds):
+            if i == j:
+                test_voltage(testpoint, minimum, maximum)
+            else:
+                test_voltage(testpoint, 0, 0.05)
+
+        # Turn off LED
+        set_debug_led(i, False)
 
     # Flash analyzer bitstream.
     flash_analyzer()
