@@ -35,7 +35,7 @@ def test():
                 minimum = voltage - drop_max
                 maximum = voltage - drop_min
             # Between 5.5V and 6.0V, OVP may kick in.
-            else if 5.5 <= 6.0:
+            elif 5.5 <= 6.0:
                 minimum = 0
                 maximum = voltage - drop_min
             # Above 6.0V, OVP must kick in.
