@@ -6,14 +6,8 @@ def test():
     # First check for shorts at each EUT USB-C port.
     for port in ('CONTROL', 'AUX', 'TARGET-C'):
         connect_tester_to(port)
-        check_for_short(port, 'GND', ' VBUS')
-        check_for_short(port, 'VBUS', 'SBU2')
-        check_for_short(port, 'SBU2', 'CC1' )
-        check_for_short(port, 'CC1',  'D-'  )
-        check_for_short(port, 'D-',   'D+'  )
-        check_for_short(port, 'D+',   'SBU1')
-        check_for_short(port, 'SBU1', 'CC2' )
-        check_for_short(port, 'CC2',  'VBUS')
+        for a, b in usb_c_adjacent_pins:
+            check_for_short(port, a, b)
 
     # Test supplying VBUS through CONTROL and AUX ports.
     for supply_port in ('CONTROL', 'AUX'):
@@ -64,11 +58,7 @@ def test():
     connect_supply_to('CONTROL')
 
     # Check all supply voltages.
-    for (testpoint, minimum, maximum) in (
-            ('+3V3',            3.25, 3.35),
-            ('+2V5',            2.45, 2.55),
-            ('+1V1',            1.05, 1.15),
-            ('VCCRAM',          3.25, 3.35)):
+    for (testpoint, minimum, maximum) in supplies:
         test_voltage(testpoint, minimum, maximum)
 
     # Check 60MHz clock.
@@ -93,13 +83,7 @@ def test():
     configure_fpga()
 
     # Check all PHY supply voltages.
-    for (testpoint, minimum, maximum) in (
-            ('CONTROL_PHY_3V3', 3.25, 3.35),
-            ('CONTROL_PHY_1V8', 1.75, 1.85),
-            ('AUX_PHY_3V3',     3.25, 3.35),
-            ('AUX_PHY_1V8',     1.75, 1.85),
-            ('TARGET_PHY_3V3',  3.25, 3.35),
-            ('TARGET_PHY_3V3',  3.25, 3.35)):
+    for (testpoint, minimum, maximum) in phy_supplies:
         test_voltage(testpoint, minimum, maximum)
 
     # Run self-test routine. Should include:
@@ -130,14 +114,6 @@ def test():
     # TODO: VBUS voltage/current monitoring testing and calibration.
 
     # Test FPGA LEDs.
-    fpga_leds = (
-        ('D7_Vf', 2.7, 2.9), # OSVX0603C1E, Purple
-        ('D6_Vf', 2.5, 2.7), # ORH-B36G, Blue
-        ('D5_Vf', 2.7, 2.9), # ORH-G36G, Green
-        ('D4_Vf', 1.9, 2.1), # E6C0603UYAC1UDA, Yellow
-        ('D3_Vf', 1.9, 2.1), # E6C0603SEAC1UDA, Orange
-        ('D2_Vf', 1.7, 1.9)) # OSR50603C1E, Red
-
     for i in range(len(fpga_leds)):
 
         # Turn on LED
@@ -160,13 +136,6 @@ def test():
     test_apollo()
 
     # Test debug LEDs.
-    debug_leds = (
-        ('D10_Vf', 3.0, 3.2), # MHT192WDT-ICE, Ice Blue
-        ('D11_Vf', 2.7, 2.9), # OSK40603C1E, Pink
-        ('D12_Vf', 2.7, 2.9), # ORH-W46G, White
-        ('D13_Vf', 2.7, 2.9), # OSK40603C1E, Pink
-        ('D14_Vf', 3.0, 3.2)) # MHT192WDT-ICE, Ice Blue
-
     for i in range(len(debug_leds)):
 
         # Turn on LED
@@ -194,3 +163,45 @@ def test():
     # TODO: Speed detection?
 
     # TODO: Manual button tests & LED visual checks.
+
+
+# Static data required for tests.
+
+usb_c_adjacent_pins = (
+    ('GND', ' VBUS'),
+    ('VBUS', 'SBU2'),
+    ('SBU2', 'CC1' ),
+    ('CC1',  'D-'  ),
+    ('D-',   'D+'  ),
+    ('D+',   'SBU1'),
+    ('SBU1', 'CC2' ),
+    ('CC2',  'VBUS'))
+
+supplies = (
+    ('+3V3',   3.25, 3.35),
+    ('+2V5',   2.45, 2.55),
+    ('+1V1',   1.05, 1.15),
+    ('VCCRAM', 3.25, 3.35))
+
+phy_supplies = (
+    ('CONTROL_PHY_3V3', 3.25, 3.35),
+    ('CONTROL_PHY_1V8', 1.75, 1.85),
+    ('AUX_PHY_3V3',     3.25, 3.35),
+    ('AUX_PHY_1V8',     1.75, 1.85),
+    ('TARGET_PHY_3V3',  3.25, 3.35),
+    ('TARGET_PHY_3V3',  3.25, 3.35))
+
+fpga_leds = (
+    ('D7_Vf', 2.7, 2.9), # OSVX0603C1E, Purple
+    ('D6_Vf', 2.5, 2.7), # ORH-B36G, Blue
+    ('D5_Vf', 2.7, 2.9), # ORH-G36G, Green
+    ('D4_Vf', 1.9, 2.1), # E6C0603UYAC1UDA, Yellow
+    ('D3_Vf', 1.9, 2.1), # E6C0603SEAC1UDA, Orange
+    ('D2_Vf', 1.7, 1.9)) # OSR50603C1E, Red
+
+debug_leds = (
+    ('D10_Vf', 3.0, 3.2), # MHT192WDT-ICE, Ice Blue
+    ('D11_Vf', 2.7, 2.9), # OSK40603C1E, Pink
+    ('D12_Vf', 2.7, 2.9), # ORH-W46G, White
+    ('D13_Vf', 2.7, 2.9), # OSK40603C1E, Pink
+    ('D14_Vf', 3.0, 3.2)) # MHT192WDT-ICE, Ice Blue
