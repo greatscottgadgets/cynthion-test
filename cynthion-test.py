@@ -131,6 +131,12 @@ def test():
 
     # TODO: LED forward voltage testing.
 
+    # Tell the FPGA to hand off the control port to the MCU.
+    request_control_handoff()
+
+    # Check Apollo debugger shows up.
+    test_apollo()
+
     # Flash analyzer bitstream.
     flash_analyzer()
 
