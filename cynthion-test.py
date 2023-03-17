@@ -152,6 +152,14 @@ def test():
     request_button('USER')
     test_user_button_pressed()
 
+    # Tell the FPGA to hand off the control port to the MCU.
+    request_control_handoff()
+    test_apollo()
+
+    # Request Apollo reset, should cause analyzer to enumerate.
+    request_apollo_reset()
+    test_analyzer()
+
     # Request press of PROGRAM button, should cause Apollo to enumerate.
     request_button('PROGRAM')
     test_apollo()
@@ -160,10 +168,8 @@ def test():
     request_button('RESET')
     test_analyzer()
 
-    # Tell the FPGA to hand off the control port to the MCU.
-    request_control_handoff()
-
-    # Check that Apollo now enumerates again.
+    # Send USB reset, should cause Apollo to enumerate again.
+    send_usb_reset()
     test_apollo()
 
 
