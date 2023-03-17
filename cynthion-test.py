@@ -121,16 +121,18 @@ def test():
     connect_host_to('TARGET-C')
     test_usb_fs(port)
 
-    # Check FPGA control of CC lines.
+    # Check FPGA control of CC and SBU lines.
     set_adc_pullup(True)
     for port in ('AUX', 'TARGET-C'):
+        connect_tester_cc_sbu_to(port)
         for levels in ((0, 1), (1, 0)):
             set_cc_levels(port, levels)
             test_voltage('CC1', cc_thresholds[levels[0]])
             test_voltage('CC2', cc_thresholds[levels[1]])
+            set_sbu_levels(port, levels)
+            test_digital_input('SBU1', levels[0])
+            test_digital_input('SBU2', levels[1])
     set_adc_pullup(False)
-
-    # TODO: SBU testing
 
     # TODO: VBUS distribution testing
 
