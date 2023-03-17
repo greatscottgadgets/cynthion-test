@@ -87,6 +87,9 @@ def test():
     # Check Apollo debugger shows up.
     test_apollo()
 
+    # Test debug LEDs.
+    test_leds(debug_led, set_debug_led)
+
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan()
 
@@ -141,27 +144,28 @@ def test():
     # Test FPGA LEDs.
     test_leds(fpga_leds, set_fpga_led)
 
-    # Tell the FPGA to hand off the control port to the MCU.
-    request_control_handoff()
-
-    # Check Apollo debugger shows up.
-    test_apollo()
-
-    # Test debug LEDs.
-    test_leds(debug_led, set_debug_led)
-
     # Request visual check of LEDs.
     request_led_check()
 
-    # Power cycle and check analyzer shows up.
-    connect_supply_to(None)
-    sleep(0.5)
-    connect_supply_to('CONTROL')
+    # Request press of USER button, should be detected by FPGA.
+    request_button('USER')
+    test_user_button_pressed()
+
+    # Request press of PROGRAM button, should cause Apollo to enumerate.
+    request_button('PROGRAM')
+    test_apollo()
+
+    # Request press of RESET button, should cause analyzer to enumerate.
+    request_button('RESET')
     test_analyzer()
 
     # TODO: Speed detection?
 
-    # TODO: Manual button tests.
+    # Tell the FPGA to hand off the control port to the MCU.
+    request_control_handoff()
+
+    # Check that Apollo now enumerates again.
+    test_apollo()
 
 
 # Helper functions for testing.
