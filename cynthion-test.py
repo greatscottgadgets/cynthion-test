@@ -220,13 +220,13 @@ phy_supplies = (
     ('TARGET_PHY_3V3',  3.25, 3.35),
     ('TARGET_PHY_3V3',  3.25, 3.35))
 
-fpga_leds = (
-    ('D7_Vf', 2.7, 2.9), # OSVX0603C1E, Purple
-    ('D6_Vf', 2.5, 2.7), # ORH-B36G, Blue
-    ('D5_Vf', 2.7, 2.9), # ORH-G36G, Green
-    ('D4_Vf', 1.9, 2.1), # E6C0603UYAC1UDA, Yellow
-    ('D3_Vf', 1.9, 2.1), # E6C0603SEAC1UDA, Orange
-    ('D2_Vf', 1.7, 1.9)) # OSR50603C1E, Red
+fpga_leds = ( # Values are 3.3V - Vf
+    ('D7_Vf', 0.4, 0.6), # OSVX0603C1E, Purple
+    ('D6_Vf', 0.6, 0.8), # ORH-B36G, Blue
+    ('D5_Vf', 0.4, 0.6), # ORH-G36G, Green
+    ('D4_Vf', 1.2, 1.4), # E6C0603UYAC1UDA, Yellow
+    ('D3_Vf', 1.2, 1.4), # E6C0603SEAC1UDA, Orange
+    ('D2_Vf', 1.4, 1.6)) # OSR50603C1E, Red
 
 debug_leds = (
     ('D10_Vf', 3.0, 3.2), # MHT192WDT-ICE, Ice Blue
