@@ -109,6 +109,7 @@ def test():
     # - HyperRAM read/write test.
     # - I2C test to all peripherals.
     # - PMOD loopback test.
+    # - FPGA sensing of target D+/D-, driven by target PHY.
     # 
     run_self_test()
 
@@ -158,8 +159,6 @@ def test():
     # Request press of RESET button, should cause analyzer to enumerate.
     request_button('RESET')
     test_analyzer()
-
-    # TODO: Speed detection?
 
     # Tell the FPGA to hand off the control port to the MCU.
     request_control_handoff()
