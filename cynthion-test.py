@@ -12,6 +12,10 @@ def test():
     # Connect EUT GND to tester GND.
     connect_grounds()
 
+    # Check CC resistances with EUT unpowered.
+    for port in ('CONTROL', 'AUX', 'TARGET-C'):
+        check_cc_resistances(port)
+
     # Test supplying VBUS through CONTROL and AUX ports.
     for supply_port in ('CONTROL', 'AUX'):
 
@@ -64,6 +68,10 @@ def test():
     for (testpoint, minimum, maximum) in supplies:
         test_voltage(testpoint, minimum, maximum)
 
+    # Check CC resistances with EUT powered.
+    for port in ('AUX', 'TARGET-C'):
+        check_cc_resistances(port)
+
     # Check 60MHz clock.
     test_clock()
 
@@ -113,7 +121,16 @@ def test():
     connect_host_to('TARGET-C')
     test_usb_fs(port)
 
-    # TODO: CC/SBU pin testing (fixed resistors and I2C control).
+    # Check FPGA control of CC lines.
+    set_adc_pullup(True)
+    for port in ('AUX', 'TARGET-C'):
+        for levels in ((0, 1), (1, 0)):
+            set_cc_levels(port, levels)
+            test_voltage('CC1', cc_thresholds[levels[0]])
+            test_voltage('CC2', cc_thresholds[levels[1]])
+    set_adc_pullup(False)
+
+    # TODO: SBU testing
 
     # TODO: VBUS distribution testing
 
