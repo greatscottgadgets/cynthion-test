@@ -9,6 +9,9 @@ def test():
         for a, b in usb_c_adjacent_pins:
             check_for_short(port, a, b)
 
+    # Connect EUT GND to tester GND.
+    connect_grounds()
+
     # Test supplying VBUS through CONTROL and AUX ports.
     for supply_port in ('CONTROL', 'AUX'):
 
