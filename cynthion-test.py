@@ -85,7 +85,7 @@ def test():
     flash_firmware()
 
     # Check Apollo debugger shows up.
-    test_apollo()
+    test_apollo_present()
 
     # Test debug LEDs.
     test_leds(debug_led, set_debug_led)
@@ -154,23 +154,23 @@ def test():
 
     # Tell the FPGA to hand off the control port to the MCU.
     request_control_handoff()
-    test_apollo()
+    test_apollo_present()
 
     # Request Apollo reset, should cause analyzer to enumerate.
     request_apollo_reset()
-    test_analyzer()
+    test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
     request_button('PROGRAM')
-    test_apollo()
+    test_apollo_present()
 
     # Request press of RESET button, should cause analyzer to enumerate.
     request_button('RESET')
-    test_analyzer()
+    test_analyzer_present()
 
     # Send USB reset, should cause Apollo to enumerate again.
     send_usb_reset()
-    test_apollo()
+    test_apollo_present()
 
 
 # Helper functions for testing.
