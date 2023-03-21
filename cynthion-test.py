@@ -230,7 +230,7 @@ def test():
 
 # Helper functions for testing.
 
-def test_leds(leds, set_led)
+def test_leds(leds, set_led):
     for i in range(len(leds)):
         # Turn on LED
         set_led(i, True)
