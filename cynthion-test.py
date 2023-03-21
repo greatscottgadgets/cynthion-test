@@ -240,7 +240,37 @@ def test():
     send_usb_reset()
     test_apollo_present()
 
-    # TODO: power down EUT and test 5V/3A and 20V/0.5A passthrough.
+    # Power off EUT.
+    connect_host_supply_to(None)
+
+    # VBUS distribution testing with EUT off.
+    for (voltage, current, resistor) in (
+        ( 5.0, 3.0, RESISTOR_HIGH_CURRENT),
+        (20.0, 0.5, RESISTOR_LOW_CURRENT)):
+
+        # Set limits for voltage and current measurements.
+        vmin_off = 0.00
+        vmax_off = 0.01
+        vmin_on  = voltage * 0.98 - 0.01
+        vmax_on  = voltage * 1.02 + 0.01
+        imin_on  = current * 0.95 - 0.01
+        imax_on  = current * 1.05 + 0.01
+
+        # Configure boost supply and connect.
+        set_boost_supply(voltage, current + 0.1)
+        set_load_resistor(resistor)
+        connect_boost_supply_to('TARGET-C')
+
+        # Check voltages and current.
+        test_vbus('TARGET-C', vmin_on, vmax_on)
+        test_vbus('TARGET-A', vmin_on, vmax_on)
+        test_vbus('CONTROL', vmin_off, vmax_off)
+        test_vbus('AUX', vmin_off, vmax_off)
+        test_boost_current(imin_on, imax_on)
+
+        # Disconnect.
+        connect_boost_supply_to(None)
+        set_load_resistor(None)
 
 
 # Helper functions for testing.
