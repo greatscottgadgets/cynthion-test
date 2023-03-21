@@ -144,56 +144,71 @@ def test():
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
 
-    # VBUS distribution testing
+    # VBUS distribution testing.
+    for (voltage, load_current, load_resistor) in (
+        ( 5.0, 3.0, RESISTOR_HIGH_CURRENT),
+        (20.0, 0.5, RESISTOR_LOW_CURRENT)):
 
-    # Supply TARGET-C and check no leakage to other ports.
-    set_passthrough('TARGET-C', 'TARGET-A', False)
-    connect_boost_supply_to('TARGET-C')
-    test_voltage('TARGET_A_VBUS', 0, 0.05)
-    test_voltage('AUX_VBUS', 0, 0.05)
-    for port in ('AUX', 'TARGET-A', 'TARGET-C'):
-        test_eut_voltage(port, -0.05, 0.05)
-        test_eut_current(port, -0.05, 0.05)
-    connect_host_supply_to('CONTROL', 'AUX')
-    connect_host_supply_to('AUX')
-    test_voltage('CONTROL_VBUS', 0, 0.05)
-    test_eut_voltage('CONTROL', -0.05, 0.05)
-    test_eut_current('CONTROL', -0.05, 0.05)
+        # Set limits for voltage and current measurements.
+        vmin_off = 0.00
+        vmax_off = 0.01
+        imin_off = -0.01
+        imax_off =  0.01
+        vmin_on  = voltage * 0.98 - 0.01
+        vmax_on  = voltage * 1.02 + 0.01
 
-    # Increase current limit and test 3A passthrough to Target-A.
-    set_boost_supply(5.0, 3.5)
-    set_load_resistor(RESISTOR_HIGH_CURRENT)
-    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
-    test_boost_current(2.9, 3.1)
-    test_eut_voltage('TARGET-C', 4.95, 5.05)
-    test_eut_current('TARGET-C', 2.95, 3.05)
-    test_eut_voltage('TARGET-A', 4.95, 5.05)
-    test_eut_current('TARGET-A', 2.95, 3.05)
+        # Test with passthrough off, and then with passthrough to load.
+        for (passthrough, current, resistor) in (
+            (False, 0.0, None),
+            (True, load_current, load_resistor)):
 
-    # Repeat test supplied through CONTROL port.
-    connect_boost_supply_to('CONTROL')
-    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
-    test_boost_current(2.9, 3.1)
-    test_eut_voltage('CONTROL', 4.95, 5.05)
-    test_eut_current('CONTROL', 2.95, 3.05)
-    test_eut_voltage('TARGET-A', 4.95, 5.05)
-    test_eut_current('TARGET-A', 2.95, 3.05)
+            imin_on = current * 0.98 - 0.01
+            imax_on = current * 1.02 + 0.01
 
-    # Repeat test supplied through AUX port.
-    connect_host_supply_to('CONTROL', 'AUX')
-    connect_host_supply_to('CONTROL')
-    connect_boost_supply_to('AUX')
-    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
-    test_boost_current(2.9, 3.1)
-    test_eut_voltage('AUX', 4.95, 5.05)
-    test_eut_current('AUX', 2.95, 3.05)
-    test_eut_voltage('TARGET-A', 4.95, 5.05)
-    test_eut_current('TARGET-A', 2.95, 3.05)
+            # Supply through each input port.
+            for input_port in ('TARGET-C', 'CONTROL', 'AUX'):
 
-    # TODO: repeat above as follows:
-    # 5V no current
-    # 5V 3A
-    # 20V/0.5A through AUX and TARGET-C (also recheck leakage)
+                # Move host supply to another port if necessary.
+                if input_port == 'CONTROL':
+                    connect_host_supply_to('CONTROL', 'AUX')
+                    connect_host_supply_to('AUX')
+                elif input_port == 'AUX':
+                    connect_host_supply_to('CONTROL', 'AUX')
+                    connect_host_supply_to('CONTROL')
+
+                # Configure boost supply and connect.
+                set_boost_supply(voltage, current + 0.1)
+                set_load_resistor(resistor)
+                connect_boost_supply_to(input_port)
+                set_passthrough(input_port, 'TARGET-A', passthrough)
+
+                # Check voltage and current on each port.
+                for port in ('CONTROL', 'AUX', 'TARGET-A', 'TARGET-C'):
+
+                    # Check voltage and positive current on input port.
+                    if port == input_port:
+                        test_vbus(input_port, vmin_on, vmax_on)
+                        test_eut_voltage(input_port, vmin_on, vmax_on)
+                        test_eut_current(input_port, imin_on, imax_on)
+                    # Check voltage and negative current on output port.
+                    elif port == 'TARGET-A' and passthrough:
+                        test_vbus(port, vmin_on, vmax_on)
+                        test_eut_voltage(port, vmin_on, vmax_on)
+                        test_eut_current(port, -imin_on, -imax_on)
+                    # Exclude the host-supplied port from measurements.
+                    elif (input_port, port) in
+                        (('CONTROL', 'AUX'), ('AUX', 'CONTROL')):
+                        continue
+                    # Check all other ports have zero leakage.
+                    else:
+                        test_vbus(port, vmin_off, vmax_off)
+                        test_eut_voltage(port, vmin_off, vmax_off)
+                        test_eut_current(port, imin_off, imax_off)
+
+                # Disconnect.
+                set_passthrough(input_port, 'TARGET-A', False)
+                connect_boost_supply_to(None)
+                set_load_resistor(None)
 
     # Test FPGA LEDs.
     test_leds(fpga_leds, set_fpga_led)
