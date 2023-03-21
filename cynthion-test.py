@@ -20,15 +20,15 @@ def test():
     for supply_port in ('CONTROL', 'AUX'):
 
         # Connect 5V supply via this port.
-        set_supply(5.0, 0.1)
-        connect_supply_to(supply_port)
+        set_boost_supply(5.0, 0.1)
+        connect_boost_supply_to(supply_port)
 
         # Expected diode drop range:
         drop_min, drop_max = 0.2, 0.3
 
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in range(5.0, 6.25, 0.05):
-            set_supply(voltage, 0.1)
+            set_boost_supply(voltage, 0.1)
             sleep(0.05)
 
             # Up to 5.5V, there must be only a diode drop.
@@ -54,15 +54,17 @@ def test():
 
         disconnect_supply_and_discharge()
 
+    # TODO: test disabling CONTROL or AUX
+
     # Test passthrough of Target-C VBUS to Target-A VBUS with power off.
-    set_supply(5.0, 0.1)
-    connect_supply_to('TARGET-C')
+    set_boost_supply(5.0, 0.1)
+    connect_boost_supply_to('TARGET-C')
     test_voltage('TARGET_A_VBUS', 4.95, 5.05)
     disconnect_supply_and_discharge()
 
     # Power at +5V through the control port for following tests.
-    set_supply(5.0, 0.1)
-    connect_supply_to('CONTROL')
+    set_boost_supply(5.0, 0.1)
+    connect_boost_supply_to('CONTROL')
 
     # Check all supply voltages.
     for (testpoint, minimum, maximum) in supplies:
@@ -138,9 +140,60 @@ def test():
             test_digital_input('SBU2', levels[1])
     set_adc_pullup(False)
 
-    # TODO: VBUS distribution testing
+    # Hand off EUT supply from boost converter to host.
+    connect_host_supply_to('CONTROL')
+    connect_boost_supply_to(None)
 
-    # TODO: VBUS voltage/current monitoring testing and calibration.
+    # VBUS distribution testing
+
+    # Supply TARGET-C and check no leakage to other ports.
+    set_passthrough('TARGET-C', 'TARGET-A', False)
+    connect_boost_supply_to('TARGET-C')
+    test_voltage('TARGET_A_VBUS', 0, 0.05)
+    test_voltage('AUX_VBUS', 0, 0.05)
+    for port in ('AUX', 'TARGET-A', 'TARGET-C'):
+        test_eut_voltage(port, -0.05, 0.05)
+        test_eut_current(port, -0.05, 0.05)
+    connect_host_supply_to('CONTROL', 'AUX')
+    connect_host_supply_to('AUX')
+    test_voltage('CONTROL_VBUS', 0, 0.05)
+    test_eut_voltage('CONTROL', -0.05, 0.05)
+    test_eut_current('CONTROL', -0.05, 0.05)
+
+    # Increase current limit and test 3A passthrough to Target-A.
+    set_boost_supply(5.0, 3.5)
+    set_load_resistor(RESISTOR_HIGH_CURRENT)
+    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
+    test_boost_current(2.9, 3.1)
+    test_eut_voltage('TARGET-C', 4.95, 5.05)
+    test_eut_current('TARGET-C', 2.95, 3.05)
+    test_eut_voltage('TARGET-A', 4.95, 5.05)
+    test_eut_current('TARGET-A', 2.95, 3.05)
+
+    # Repeat test supplied through CONTROL port.
+    connect_boost_supply_to('CONTROL')
+    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
+    test_boost_current(2.9, 3.1)
+    test_eut_voltage('CONTROL', 4.95, 5.05)
+    test_eut_current('CONTROL', 2.95, 3.05)
+    test_eut_voltage('TARGET-A', 4.95, 5.05)
+    test_eut_current('TARGET-A', 2.95, 3.05)
+
+    # Repeat test supplied through AUX port.
+    connect_host_supply_to('CONTROL', 'AUX')
+    connect_host_supply_to('CONTROL')
+    connect_boost_supply_to('AUX')
+    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
+    test_boost_current(2.9, 3.1)
+    test_eut_voltage('AUX', 4.95, 5.05)
+    test_eut_current('AUX', 2.95, 3.05)
+    test_eut_voltage('TARGET-A', 4.95, 5.05)
+    test_eut_current('TARGET-A', 2.95, 3.05)
+
+    # TODO: repeat above as follows:
+    # 5V no current
+    # 5V 3A
+    # 20V/0.5A through AUX and TARGET-C (also recheck leakage)
 
     # Test FPGA LEDs.
     test_leds(fpga_leds, set_fpga_led)
@@ -171,6 +224,8 @@ def test():
     # Send USB reset, should cause Apollo to enumerate again.
     send_usb_reset()
     test_apollo_present()
+
+    # TODO: power down EUT and test 5V/3A and 20V/0.5A passthrough.
 
 
 # Helper functions for testing.
