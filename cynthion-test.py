@@ -120,13 +120,6 @@ def test():
         connect_host_to(port)
         test_usb_hs(port)
 
-    # Tell the FPGA to put the target PHY in passive mode, then test
-    # passthrough to a USB FS device created on the GF1.
-    connect_host_to('CONTROL')
-    set_target_passive()
-    connect_host_to('TARGET-C')
-    test_usb_fs(port)
-
     # Check FPGA control of CC and SBU lines.
     set_adc_pullup(True)
     for port in ('AUX', 'TARGET-C'):
@@ -143,6 +136,16 @@ def test():
     # Hand off EUT supply from boost converter to host.
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
+
+    # Request the operator connect a cable to Target-A.
+    request_target_a_cable()
+
+    # Tell the FPGA to put the target PHY in passive mode, then test
+    # passthrough to a USB FS device created on the GF1.
+    connect_host_to('CONTROL')
+    set_target_passive()
+    connect_host_to('TARGET-C')
+    test_usb_fs()
 
     # VBUS distribution testing.
     for (voltage, load_current, load_resistor) in (
