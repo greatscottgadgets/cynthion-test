@@ -54,8 +54,6 @@ def test():
 
         disconnect_supply_and_discharge()
 
-    # TODO: test disabling CONTROL or AUX
-
     # Test passthrough of Target-C VBUS to Target-A VBUS with power off.
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('TARGET-C')
@@ -134,6 +132,47 @@ def test():
     set_adc_pullup(False)
 
     # Hand off EUT supply from boost converter to host.
+    set_boost_supply(4.5, 0.1)
+    connect_host_supply_to('CONTROL')
+    connect_boost_supply_to(None)
+
+    # Connect boost supply to AUX at a voltage higher than the host supply,
+    # but less than the minimum OVP cutoff.
+    set_boost_supply(5.4, 0.1)
+    connect_boost_supply_to('AUX')
+
+    # 5V rail should be switched to the higher supply.
+    test_voltage('+5V', 5.35, 5.45)
+
+    # Tell the FPGA to disable the AUX supply input.
+    # 5V rail should be switched to the lower host supply on CONTROL.
+    enable_supply_input('AUX', False)
+    test_voltage('+5V', 4.75, 5.25)
+
+    # Re-enable AUX supply, check 5V rail is switched back to it.
+    enable_supply_input('AUX', True)
+    test_voltage('+5V', 5.35, 5.45)
+
+    # Swap ports between host and boost converter.
+    set_boost_supply(4.5, 0.1)
+    connect_host_supply_to('AUX')
+    connect_boost_supply_to('CONTROL')
+
+    # Increase boost voltage to identifiable level.
+    set_boost_supply(5.4, 0.1)
+    test_voltage('+5V', 5.35, 5.45)
+
+    # Tell the FPGA to disable the CONTROL supply input.
+    # 5V rail should be switched to the lower host supply on AUX.
+    enable_supply_input('CONTROL', False)
+    test_voltage('+5V', 4.75, 5.25)
+
+    # Re-enable CONTROL supply, check 5V rail is switched back to it.
+    enable_supply_input('CONTROL', True)
+    test_voltage('+5V', 5.35, 5.45)
+
+    # Swap back to powering from host.
+    set_boost_supply(4.5, 0.1)
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
 
