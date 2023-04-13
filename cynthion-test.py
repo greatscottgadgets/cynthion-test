@@ -1,6 +1,4 @@
-from greatfet import GreatFET
-
-gf = GreatFET()
+from tycho import *
 
 def test():
     # First check for shorts at each EUT USB-C port.
@@ -238,8 +236,8 @@ def test():
                         test_eut_voltage(port, vmin_on, vmax_on)
                         test_eut_current(port, -imin_on, -imax_on)
                     # Exclude the host-supplied port from measurements.
-                    elif (input_port, port) in
-                        (('CONTROL', 'AUX'), ('AUX', 'CONTROL')):
+                    elif (input_port, port) in (
+                        ('CONTROL', 'AUX'), ('AUX', 'CONTROL')):
                         continue
                     # Check all other ports have zero leakage.
                     else:
