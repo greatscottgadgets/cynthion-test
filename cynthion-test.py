@@ -55,6 +55,9 @@ def test():
     test_voltage('TARGET_A_VBUS', 4.95, 5.05)
     disconnect_supply_and_discharge()
 
+    # Check that the Target-A cable is not connected yet.
+    test_voltage('VBUS_TA', 0, 0.05)
+
     # Power at +5V through the control port for following tests.
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('CONTROL')
@@ -182,6 +185,12 @@ def test():
 
     # Request the operator connect a cable to Target-A.
     request_target_a_cable()
+
+    # Check that the Target-A cable is connected.
+    set_boost_supply(5.0, 0.1)
+    connect_boost_supply_to('TARGET-C')
+    test_voltage('VBUS_TA', 4.95, 5.05)
+    connect_boost_supply_to(None)
 
     # Tell the FPGA to put the target PHY in passive mode, then test
     # passthrough to a USB FS device created on the GF1.
