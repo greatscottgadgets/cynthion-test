@@ -21,9 +21,6 @@ def test():
         set_boost_supply(5.0, 0.1)
         connect_boost_supply_to(supply_port)
 
-        # Expected diode drop range:
-        drop_min, drop_max = 0.2, 0.3
-
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in range(5.0, 6.25, 0.05):
             set_boost_supply(voltage, 0.1)
@@ -31,16 +28,16 @@ def test():
 
             # Up to 5.5V, there must be only a diode drop.
             if voltage <= 5.5:
-                minimum = voltage - drop_max
-                maximum = voltage - drop_min
+                minimum = voltage - schottky_drop_max
+                maximum = voltage - schottky_drop_min
             # Between 5.5V and 6.0V, OVP may kick in.
             elif 5.5 <= 6.0:
                 minimum = 0
-                maximum = voltage - drop_min
+                maximum = voltage - schottky_drop_min
             # Above 6.0V, OVP must kick in.
             else:
                 minimum = 0
-                maximum = 6.0 - drop_min
+                maximum = 6.0 - schottky_drop_min
 
             # Check voltage at +5V rail.
             test_voltage('+5V', minimum, maximum)
@@ -139,17 +136,26 @@ def test():
     set_boost_supply(5.4, 0.1)
     connect_boost_supply_to('AUX')
 
+    # Define ranges to distinguish high and low supplies.
+    high_min = 5.35 - schottky_drop_max
+    high_max = 5.45 - schottky_drop_min
+    low_min = 4.75 - schottky_drop_max
+    low_max = 5.25 - schottky_drop_min
+
+    # Ensure that ranges are distinguishable.
+    assert(high_min > low_max)
+
     # 5V rail should be switched to the higher supply.
-    test_voltage('+5V', 5.35, 5.45)
+    test_voltage('+5V', high_min, high_max)
 
     # Tell the FPGA to disable the AUX supply input.
     # 5V rail should be switched to the lower host supply on CONTROL.
     enable_supply_input('AUX', False)
-    test_voltage('+5V', 4.75, 5.25)
+    test_voltage('+5V', low_min, low_max)
 
     # Re-enable AUX supply, check 5V rail is switched back to it.
     enable_supply_input('AUX', True)
-    test_voltage('+5V', 5.35, 5.45)
+    test_voltage('+5V', high_min, high_max)
 
     # Swap ports between host and boost converter.
     set_boost_supply(4.5, 0.1)
@@ -158,16 +164,16 @@ def test():
 
     # Increase boost voltage to identifiable level.
     set_boost_supply(5.4, 0.1)
-    test_voltage('+5V', 5.35, 5.45)
+    test_voltage('+5V', high_min, high_max)
 
     # Tell the FPGA to disable the CONTROL supply input.
     # 5V rail should be switched to the lower host supply on AUX.
     enable_supply_input('CONTROL', False)
-    test_voltage('+5V', 4.75, 5.25)
+    test_voltage('+5V', low_min, low_max)
 
     # Re-enable CONTROL supply, check 5V rail is switched back to it.
     enable_supply_input('CONTROL', True)
-    test_voltage('+5V', 5.35, 5.45)
+    test_voltage('+5V', high_min, high_max)
 
     # Swap back to powering from host.
     set_boost_supply(4.5, 0.1)
@@ -374,3 +380,5 @@ debug_leds = (
     ('D12_Vf', 2.7, 2.9), # ORH-W46G, White
     ('D13_Vf', 2.7, 2.9), # OSK40603C1E, Pink
     ('D14_Vf', 3.0, 3.2)) # MHT192WDT-ICE, Ice Blue
+
+schottky_drop_min, schottky_drop_max = (0.505, 0.565) # PMEG10010ELR at 0.1A
