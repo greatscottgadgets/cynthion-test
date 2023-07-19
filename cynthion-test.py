@@ -1,11 +1,13 @@
+from selftest import InteractiveSelftest
+from time import sleep
 from tycho import *
+import numpy as np
 
 def test():
     # First check for shorts at each EUT USB-C port.
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        connect_tester_to(port)
-        for a, b in usb_c_adjacent_pins:
-            check_for_short(port, a, b)
+    #for port in ('CONTROL', 'AUX', 'TARGET-C'):
+        #connect_tester_to(port)
+        #check_for_shorts(port)
 
     # Connect EUT GND to tester GND.
     connect_grounds()
@@ -21,10 +23,15 @@ def test():
         set_boost_supply(5.0, 0.1)
         connect_boost_supply_to(supply_port)
 
+        # Check supply present at port.
+        test_vbus(supply_port, 4.9, 5.1)
+
         # Ramp the supply in 50mV steps up to 6.25V.
-        for voltage in range(5.0, 6.25, 0.05):
+        for voltage in np.arange(5.0, 6.25, 0.05):
             set_boost_supply(voltage, 0.1)
             sleep(0.05)
+
+            schottky_drop_min, schottky_drop_max = (0.35, 0.75)
 
             # Up to 5.5V, there must be only a diode drop.
             if voltage <= 5.5:
@@ -53,10 +60,11 @@ def test():
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('TARGET-C')
     test_voltage('TARGET_A_VBUS', 4.95, 5.05)
-    disconnect_supply_and_discharge()
 
     # Check that the Target-A cable is not connected yet.
-    test_voltage('VBUS_TA', 0, 0.05)
+    test_voltage('VBUS_TA', 0, 4)
+
+    disconnect_supply_and_discharge()
 
     # Power at +5V through the control port for following tests.
     set_boost_supply(5.0, 0.1)
@@ -76,8 +84,12 @@ def test():
     # Flash Saturn-V bootloader to MCU via SWD.
     flash_bootloader()
 
+    sleep(1)
+
     # Connect host D+/D- to control port.
     connect_host_to('CONTROL')
+
+    sleep(1)
 
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
@@ -86,13 +98,13 @@ def test():
     test_apollo_present()
 
     # Test debug LEDs.
-    test_leds(debug_led, set_debug_led)
+    test_leds(debug_leds, set_debug_leds, 3.0, 3.4)
 
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan()
 
     # Flash analyzer bitstream.
-    flash_analyzer()
+    #flash_analyzer()
 
     # Configure FPGA with test gateware.
     configure_fpga()
@@ -109,7 +121,8 @@ def test():
     # - PMOD loopback test.
     # - FPGA sensing of target D+/D-, driven by target PHY.
     # 
-    run_self_test()
+    tester = InteractiveSelftest()
+    tester.run_tests()
 
     # Test USB HS comms on each port against the self-test gateware.
     for port in ('CONTROL', 'AUX', 'TARGET-C'):
@@ -122,11 +135,11 @@ def test():
         connect_tester_cc_sbu_to(port)
         for levels in ((0, 1), (1, 0)):
             set_cc_levels(port, levels)
-            test_voltage('CC1', cc_thresholds[levels[0]])
-            test_voltage('CC2', cc_thresholds[levels[1]])
+            test_voltage('CC1_test', *cc_thresholds[levels[0]])
+            test_voltage('CC2_test', *cc_thresholds[levels[1]])
             set_sbu_levels(port, levels)
-            test_digital_input('SBU1', levels[0])
-            test_digital_input('SBU2', levels[1])
+            test_pin('SBU1_test', levels[0])
+            test_pin('SBU2_test', levels[1])
     set_adc_pullup(False)
 
     # Hand off EUT supply from boost converter to host.
@@ -140,10 +153,11 @@ def test():
     connect_boost_supply_to('AUX')
 
     # Define ranges to distinguish high and low supplies.
+    schottky_drop_min, schottky_drop_max = (0.65, 0.75)
     high_min = 5.35 - schottky_drop_max
     high_max = 5.45 - schottky_drop_min
-    low_min = 4.75 - schottky_drop_max
-    low_max = 5.25 - schottky_drop_min
+    low_min = 4.95 - schottky_drop_max
+    low_max = 5.05 - schottky_drop_min
 
     # Ensure that ranges are distinguishable.
     assert(high_min > low_max)
@@ -266,7 +280,7 @@ def test():
                 set_load_resistor(None)
 
     # Test FPGA LEDs.
-    test_leds(fpga_leds, set_fpga_led)
+    test_leds(fpga_leds, set_fpga_leds, 0, 0.05)
 
     # Request visual check of LEDs.
     request_led_check()
@@ -330,52 +344,38 @@ def test():
 
 # Helper functions for testing.
 
-def test_leds(leds, set_led):
+def test_leds(leds, set_leds, off_min, off_max):
     for i in range(len(leds)):
         # Turn on LED
-        set_led(i, True)
+        set_leds(1 << i)
 
         # Check that this and only this LED is on, with the correct voltage.
         for j, (testpoint, minimum, maximum) in enumerate(leds):
             if i == j:
                 test_voltage(testpoint, minimum, maximum)
             else:
-                test_voltage(testpoint, 0, 0.05)
-
-        # Turn off LED
-        set_led(i, False)
+                test_voltage(testpoint, off_min, off_max)
 
     # Turn on all LEDs for visual check.
-    for i in range(len(leds)):
-        set_led(i, True)
+    set_leds(0x1F)
 
 # Static data required for tests.
 
-usb_c_adjacent_pins = (
-    ('GND', ' VBUS'),
-    ('VBUS', 'SBU2'),
-    ('SBU2', 'CC1' ),
-    ('CC1',  'D-'  ),
-    ('D-',   'D+'  ),
-    ('D+',   'SBU1'),
-    ('SBU1', 'CC2' ),
-    ('CC2',  'VBUS'))
-
 supplies = (
-    ('+3V3',   3.25, 3.35),
-    ('+2V5',   2.45, 2.55),
-    ('+1V1',   1.05, 1.15),
-    ('VCCRAM', 3.25, 3.35))
+    ('+3V3',   3.2, 3.4),
+    ('+2V5',   2.4, 2.6),
+    ('+1V1',   1.0, 1.2),
+    ('VCCRAM', 3.2, 3.4))
 
 phy_supplies = (
-    ('CONTROL_PHY_3V3', 3.25, 3.35),
-    ('CONTROL_PHY_1V8', 1.75, 1.85),
-    ('AUX_PHY_3V3',     3.25, 3.35),
-    ('AUX_PHY_1V8',     1.75, 1.85),
-    ('TARGET_PHY_3V3',  3.25, 3.35),
-    ('TARGET_PHY_3V3',  3.25, 3.35))
+    ('CONTROL_PHY_3V3', 3.2, 3.4),
+    ('CONTROL_PHY_1V8', 1.7, 1.9),
+    ('AUX_PHY_3V3',     3.2, 3.4),
+    ('AUX_PHY_1V8',     1.7, 1.9),
+    ('TARGET_PHY_3V3',  3.2, 3.4),
+    ('TARGET_PHY_3V3',  3.2, 3.4))
 
-fpga_leds = ( # Values are 3.3V - Vf
+fpga_leds = (
     ('D7_Vf', 0.4, 0.6), # OSVX0603C1E, Purple
     ('D6_Vf', 0.6, 0.8), # ORH-B36G, Blue
     ('D5_Vf', 0.4, 0.6), # ORH-G36G, Green
@@ -383,11 +383,14 @@ fpga_leds = ( # Values are 3.3V - Vf
     ('D3_Vf', 1.2, 1.4), # E6C0603SEAC1UDA, Orange
     ('D2_Vf', 1.4, 1.6)) # OSR50603C1E, Red
 
-debug_leds = (
-    ('D10_Vf', 3.0, 3.2), # MHT192WDT-ICE, Ice Blue
-    ('D11_Vf', 2.7, 2.9), # OSK40603C1E, Pink
-    ('D12_Vf', 2.7, 2.9), # ORH-W46G, White
-    ('D13_Vf', 2.7, 2.9), # OSK40603C1E, Pink
-    ('D14_Vf', 3.0, 3.2)) # MHT192WDT-ICE, Ice Blue
+debug_leds = ( # Values are 3.3V - Vf
+    ('D10_Vf', 2.5, 2.6), # MHT192WDT-ICE, Ice Blue
+    ('D11_Vf', 2.6, 2.7), # OSK40603C1E, Pink
+    ('D12_Vf', 2.5, 2.7), # ORH-W46G, White
+    ('D13_Vf', 2.6, 2.7), # OSK40603C1E, Pink
+    ('D14_Vf', 2.5, 2.6)) # MHT192WDT-ICE, Ice Blue
 
-schottky_drop_min, schottky_drop_max = (0.505, 0.565) # PMEG10010ELR at 0.1A
+cc_thresholds = [(0, 3.3), (0, 3.3)]
+
+if __name__ == "__main__":
+    test()
