@@ -1,6 +1,11 @@
+from colorama import Fore, Back, Style
+from apollo_fpga import ApolloDebugger
+from selftest import InteractiveSelftest, REGISTER_LEDS
 from tps55288 import TPS55288
 from greatfet import *
 from time import sleep
+import colorama
+import inspect
 import os
 
 gpio_allocations = dict(
@@ -95,67 +100,116 @@ for name, (position, state) in gpio_allocations.items():
     pin = gf.gpio.get_pin(position)
     globals()[name] = pin
     if state is None:
-        print(f"Setting {name} to input")
         pin.input()
     elif state:
-        print(f"Setting {name} to output high")
         pin.high()
     else:
-        print(f"Setting {name} to output low")
         pin.low()
 
 BOOST_EN.high()
 boost = TPS55288(gf)
 boost.disable()
 
+colorama.init()
+
+indent = 0
+
+def reset():
+    for name, (position, state) in gpio_allocations.items():
+        pin = globals()[name]
+        if state is None:
+            pin.input()
+        elif state:
+            pin.high()
+        else:
+            pin.low()
+
+def msg(text, end):
+    print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end)
+
+def item(text):
+    msg(text, ".\n")
+
+def begin(text):
+    global indent
+    msg(text, ":\n")
+    indent += 1
+
+def end():
+    global indent
+    indent -= 1
+
+def start(text):
+    msg(text, "... ")
+
+def done():
+    print(Fore.GREEN + "OK" + Style.RESET_ALL + ".")
+
+def fail():
+    print(Fore.RED + "FAIL" + Style.RESET_ALL + ".")
+
+def todo(text):
+    item(Fore.YELLOW + "TODO" + Style.RESET_ALL + ": " + text)
+
+def info(text):
+    return Fore.CYAN + str(text) + Style.RESET_ALL
+
+def begin_short_check(a, b, port):
+    begin(f"Checking for {info(a)} to {info(b)} short on {info(port)}")
+
 def check_for_shorts(port):
-    # Pull mux output low to detect a high at the mux.
-    V_DIV.high()
-    vmin = 0.0
-    vmax = 0.2
+    begin(f"Checking for shorts on {info(port)}")
 
     connect_tester_to(port)
     connect_tester_cc_sbu_to(port)
 
-    print(f"Checking for VBUS/GND short on {port}")
-    GND_EUT.high()
-    test_vbus(port, vmin, vmax)
-    GND_EUT.low()
+    begin_short_check('VBUS', 'GND', port)
+    set_pin('GND_EUT', True)
+    test_vbus(port, 2.0, 2.9)
+    set_pin('GND_EUT', None)
+    end()
 
-    print(f"Checking for VBUS/SBU2 short on {port}")
-    SBU2_test.high()
-    test_vbus(port, vmin, vmax)
+    begin_short_check('VBUS', 'SBU2', port)
+    set_pin('SBU2_test', True)
+    test_vbus(port, 0.5, 2.5)
+    set_pin('SBU2_test', None)
+    end()
 
-    print(f"Checking for SBU2/CC1 short on {port}")
-    CC1_test.input()
-    SBU2_test.low()
-    test_pin('CC1_test', True)
+    begin_short_check('SBU2', 'CC1', port)
+    set_pin('SBU2_test', True)
+    test_voltage('CC1_test', 0.5, 2.5)
+    set_pin('SBU2_test', None)
+    end()
 
-    print(f"Checking for CC1/D- short on {port}")
-    D_TEST_MINUS.low()
-    test_pin('CC1_test', True)
+    todo("CC1/D- short check")
 
-    print(f"Checking for D-/D+ short on {port}")
-    D_TEST_PLUS.input()
-    D_TEST_MINUS.low()
-    test_pin('D_TEST_PLUS', True)
+    todo("D-/D+ short check")
 
-    print(f"Checking for D+/SBU1 short on {port}")
-    SBU1_test.low()
-    test_pin('D_TEST_PLUS', True)
+    todo("D+/SBU1 short check")
 
-    print(f"Checking for SBU1/CC2 short on {port}")
-    CC2_test.low()
-    test_pin('SBU1_test', True)
+    begin_short_check('SBU1', 'CC2', port)
+    set_pin('SBU1_test', True)
+    test_voltage('CC2_test', 0.5, 2.5)
+    set_pin('SBU1_test', None)
+    end()
 
-    print(f"Checking for CC2/VBUS short on {port}")
-    test_vbus(port, vmin, vmax)
+    begin_short_check('CC2', 'VBUS', port)
+    set_pin('CC2_test', False)
+    test_vbus(port, 0.5, 2.5)
+    set_pin('CC2_test', None)
+    end()
+
+    end()
 
 def connect_grounds():
+    item("Connecting EUT ground to Tycho ground")
     GND_EN.high()
 
-def connect_usb(mode, port):
-    print(f"Connecting {port} to {mode}")
+def connect_tester_to(port):
+    todo(f"Connecting tester D+/D- to {info(port)}")
+
+def connect_host_to(port):
+    item(f"Connecting host D+/D- to {info(port)}")
     D_OEn_1.high()
     D_OEn_2.high()
     D_OEn_3.high()
@@ -168,29 +222,23 @@ def connect_usb(mode, port):
     D_OEn_2.low()
     D_OEn_3.low()
 
-def connect_tester_to(port):
-    raise NotImplemented
-    connect_usb('TEST', port)
-
-def connect_host_to(port):
-    connect_usb('HOST', port)
-
 def check_cc_resistances(port):
-    print(f"Checking CC resistances on {port}")
-    pass
+    todo(f"Checking CC resistances on {info(port)}")
 
 def test_leakage(port):
-    print(f"Checking leakage on {port}")
-    pass
+    test_vbus(port, 0, 0.3)
 
 def set_boost_supply(voltage, current):
-    print(f"Setting DC-DC converter to {voltage:.1f}V {current:.1f}A")
+    item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
     boost.set_voltage(voltage)
     boost.set_current_limit(current)
     boost.enable()
 
 def connect_boost_supply_to(port):
-    print(f"Connecting DC-DC converter to {port}")
+    if port is None:
+        item(f"Disconnecting DC-DC converter")
+    else:
+        item(f"Connecting DC-DC converter to {info(port)}")
     BOOST_VBUS_AUX.low()
     BOOST_VBUS_CON.low()
     BOOST_VBUS_TC.low()
@@ -201,20 +249,7 @@ def connect_boost_supply_to(port):
     if port == 'TARGET-C':
         BOOST_VBUS_TC.high()
 
-def test_voltage(channel, minimum, maximum):
-    if maximum <= 3.3:
-        V_DIV.low()
-        V_DIV_MULT.low()
-        scale = 3.3 / 1024
-    elif maximum <= 6.6:
-        V_DIV.high()
-        V_DIV_MULT.low()
-        scale = 3.3 / 1024 * 2
-    else:
-        V_DIV.low()
-        V_DIV_MULT.high()
-        scale = 3.3 / 1024 * (30 + 5.1) / 5.1
-
+def mux_select(channel):
     mux, pin = mux_channels[channel]
 
     MUX1_EN.low()
@@ -233,96 +268,187 @@ def test_voltage(channel, minimum, maximum):
         MUX2_A3.write(pin & 8)
         MUX2_EN.high()
 
+def test_voltage(channel, minimum, maximum):
+    if maximum <= 3.3:
+        V_DIV.low()
+        V_DIV_MULT.low()
+        scale = 3.3 / 1024
+    elif maximum <= 6.6:
+        V_DIV.high()
+        V_DIV_MULT.low()
+        scale = 3.3 / 1024 * 2
+    else:
+        V_DIV.low()
+        V_DIV_MULT.high()
+        scale = 3.3 / 1024 * (30 + 5.1) / 5.1
+
+    mux_select(channel)
+
     samples = gf.adc.read_samples(1000)
     voltage = scale * sum(samples) / len(samples)
 
-    print(f"Checking voltage on {channel} is within {minimum:.2f} to {maximum:.2f} V: {voltage:.2f} V")
+    message = f"Checking voltage on {info(channel)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} V')}: "
+    result = f"{voltage:.2f} V"
 
     if voltage < minimum:
+        item(message + Fore.RED + result)
         raise ValueError(f"Voltage too low on {channel}: {voltage:.2f} V, minimum was {minimum:.2f} V")
     elif voltage > maximum:
+        item(message + Fore.RED + result)
         raise ValueError(f"Voltage too high on {channel}: {voltage:.2f} V, maximum was {maximum:.2f} V")
 
+    item(message + Fore.GREEN + result)
     return voltage
 
-def test_pin(pin, level):
-    print(f"Checking pin {pin} is {'high' if level else 'low'}")
-    pass
+def set_pin(pin, level):
+    required = ('input' if level is None else
+        'output high' if level else 'output low')
+    item(f"Setting pin {info(pin)} to {info(required)}")
+    pin = globals()[pin]
+    if level is None:
+        pin.input()
+    elif level:
+        pin.high()
+    else:
+        pin.low()
 
-def disconnect_supply_and_discharge():
-    print(f"Disconnecting and discharging supply")
+def test_pin(pin, level):
+    required = 'high' if level else 'low'
+    start(f"Checking pin {info(pin)} is {info(required)}")
+    value = globals()[pin].input()
+    found = 'high' if value else 'low'
+    if value == level:
+        done()
+    else:
+        fail()
+        raise ValueError(f"Pin {pin} is {found}, should be {required}")
+
+def disconnect_supply_and_discharge(port):
+    item(f"Disconnecting supply and discharging {info(port)}")
     boost.disable()
-    TEST_20V.high()
-    sleep(0.01)
-    TEST_20V.low()
+    mux_select(vbus_channels[port])
+    V_DIV.high()
+    V_DIV_MULT.high()
+    sleep(0.5)
+    V_DIV.low()
+    V_DIV_MULT.low()
 
 def test_clock():
-    print(f"Checking clock frequency")
-    pass
+    todo(f"Checking clock frequency")
 
 def run_command(cmd):
-    result = os.system(cmd)
+    result = os.system(cmd + " > /dev/null 2>&1")
     if result != 0:
         raise RuntimeError(f"Command '{cmd}' failed with exit status {result}")
 
 def flash_bootloader():
-    print(f"Flashing Saturn-V...")
+    start(f"Flashing Saturn-V bootloader to MCU via SWD")
     run_command('gdb-multiarch --batch -x flash-bootloader.gdb')
+    done()
 
 def flash_firmware():
-    print(f"Flashing Apollo...")
+    start(f"Flashing Apollo to MCU via DFU")
     run_command('dfu-util -a 0 -d 1d50:615c -D luna_d11-firmware.bin')
+    done()
 
 def test_apollo_present():
-    print(f"Checking for Apollo")
+    start(f"Checking for Apollo")
     run_command('apollo info')
+    done()
 
-def set_debug_leds(bitmask):
-    print(f"Setting debug LEDs to 0b{bitmask:05b}")
-    run_command(f"apollo leds {bitmask}")
+def set_debug_leds(apollo, bitmask):
+    start(f"Setting debug LEDs to 0b{bitmask:05b}")
+    apollo.set_led_pattern(bitmask)
+    done()
 
-def test_jtag_scan():
-    pass
+def set_fpga_leds(apollo, bitmask):
+    start(f"Setting FPGA LEDs to 0b{bitmask:05b}")
+    apollo.registers.register_write(REGISTER_LEDS, bitmask)
+    done()
 
-def flash_analyzer():
-    print(f"Flashing analyzer gateware...")
-    run_command('apollo force-offline')
-    run_command('apollo flash-erase')
-    run_command('apollo flash-program analyzer.bit')
+def test_jtag_scan(apollo):
+    begin("Checking JTAG scan chain")
+    apollo.jtag.initialize()
+    devices = [(device.idcode(), device.description())
+        for device in apollo.jtag.enumerate()]
+    for idcode, desc in devices:
+        item(f"Found {info(f'0x{idcode:8X}')}: {info(desc)}")
+    if devices != [(0x41111043, "Lattice LFE5U-25F ECP5 FPGA")]:
+        raise ValueError("JTAG scan chain did not include expected devices")
+    end()
 
-def configure_fpga():
-    print(f"Configuring self-test gateware...")
-    run_command('apollo configure selftest.bit')
+def flash_analyzer(apollo):
+    start(f"Flashing analyzer gateware")
+    bitstream = open('analyzer.bit', 'rb').read()
+    programmer = apollo.create_jtag_programmer(apollo.jtag)
+    programmer.unconfigure()
+    programmer.erase_flash()
+    programmer.flash(bitstream)
+    apollo.soft_reset()
+    done()
+
+def configure_fpga(apollo):
+    start(f"Configuring self-test gateware")
+    bitstream = open('selftest.bit', 'rb').read()
+    programmer = apollo.create_jtag_programmer(apollo.jtag)
+    programmer.configure(bitstream)
+    done()
+
+def run_self_test(apollo):
+    begin("Running self test")
+    selftest = InteractiveSelftest()
+    selftest._MustUse__used = True
+    selftest.dut = apollo
+    for name, member in inspect.getmembers(selftest):
+        if inspect.ismethod(member) and name.startswith('test_'):
+            method = member
+            description = method.__name__.replace("test_", "")
+            try:
+                start(description)
+                method(apollo)
+                done()
+            except Exception as e:
+                fail()
+                raise RuntimeError(f"{description} self-test failed")
+    end()
 
 def test_usb_hs(port):
-    pass
+    todo(f"Testing USB HS comms on {info(port)}")
 
 def set_adc_pullup(enable):
-    pass
+    todo(f"Enabling ADC pullup")
 
 def connect_tester_cc_sbu_to(port):
-    pass
+    item(f"Connecting tester CC/SBU lines to {info(port)}")
+    SIG1_OEn.high()
+    SIG2_OEn.high()
+    if port is None:
+        return
+    SIG1_S.set_state(port == 'CONTROL')
+    SIG2_S.set_state(port == 'TARGET-C')
+    SIG1_OEn.low()
+    SIG2_OEn.low()
 
 def set_cc_levels(port, levels):
-    pass
+    todo(f"Setting CC levels on {info(port)} to {info(levels)}")
 
 def set_sbu_levels(port, levels):
-    pass
+    todo(f"Setting SBU levels on {info(port)} to {info(levels)}")
 
 def connect_host_supply_to(port):
-    pass
+    todo(f"Connecting host supply to {port}")
 
 def enable_supply_input(port, enable):
-    pass
+    todo(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
 
 def request_target_a_cable():
-    pass
+    todo(f"Asking the user insert the Target-A cable into EUT")
 
 def set_target_passive():
-    pass
+    todo(f"Setting target PHY to passive mode")
 
 def test_usb_fs():
-    pass
+    todo(f"Testing USB FS comms on {port}")
 
 def set_load_resistor(resistor):
     pass

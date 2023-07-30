@@ -1,13 +1,11 @@
-from selftest import InteractiveSelftest
 from time import sleep
 from tycho import *
 import numpy as np
 
 def test():
     # First check for shorts at each EUT USB-C port.
-    #for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        #connect_tester_to(port)
-        #check_for_shorts(port)
+    for port in ('CONTROL', 'AUX', 'TARGET-C'):
+        check_for_shorts(port)
 
     # Connect EUT GND to tester GND.
     connect_grounds()
@@ -18,6 +16,7 @@ def test():
 
     # Test supplying VBUS through CONTROL and AUX ports.
     for supply_port in ('CONTROL', 'AUX'):
+        begin(f"Testing VBUS supply though {info(supply_port)}")
 
         # Connect 5V supply via this port.
         set_boost_supply(5.0, 0.1)
@@ -28,6 +27,8 @@ def test():
 
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in np.arange(5.0, 6.25, 0.05):
+            begin(f"Testing with {info(f'{voltage:.2f} V')} supply "
+                  f"on {info(supply_port)}")
             set_boost_supply(voltage, 0.1)
             sleep(0.05)
 
@@ -38,7 +39,7 @@ def test():
                 minimum = voltage - schottky_drop_max
                 maximum = voltage - schottky_drop_min
             # Between 5.5V and 6.0V, OVP may kick in.
-            elif 5.5 <= 6.0:
+            elif 5.5 <= voltage <= 6.0:
                 minimum = 0
                 maximum = voltage - schottky_drop_min
             # Above 6.0V, OVP must kick in.
@@ -49,34 +50,41 @@ def test():
             # Check voltage at +5V rail.
             test_voltage('+5V', minimum, maximum)
 
-            # Check for leakage to other ports.
+            begin("Checking for leakage to other ports")
             for port in ('CONTROL', 'AUX', 'TARGET-C', 'TARGET-A'):
                 if port != supply_port:
                     test_leakage(port)
+            end()
 
-        disconnect_supply_and_discharge()
+            end()
 
-    # Test passthrough of Target-C VBUS to Target-A VBUS with power off.
+        disconnect_supply_and_discharge(supply_port)
+        end()
+
+    begin("Testing passthrough of Target-C VBUS to Target-A VBUS with power off")
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('TARGET-C')
     test_voltage('TARGET_A_VBUS', 4.95, 5.05)
+    begin("Checking that the Target-A cable is not connected yet")
+    test_vbus('TARGET-A', 0, 4.0)
+    end()
+    disconnect_supply_and_discharge('TARGET-C')
+    end()
 
-    # Check that the Target-A cable is not connected yet.
-    test_voltage('VBUS_TA', 0, 4)
-
-    disconnect_supply_and_discharge()
-
-    # Power at +5V through the control port for following tests.
+    begin("Powering EUT for testing")
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('CONTROL')
+    end()
 
-    # Check all supply voltages.
+    begin("Checking all supply voltages")
     for (testpoint, minimum, maximum) in supplies:
         test_voltage(testpoint, minimum, maximum)
+    end()
 
-    # Check CC resistances with EUT powered.
+    begin("Checking CC resistances with EUT powered")
     for port in ('AUX', 'TARGET-C'):
         check_cc_resistances(port)
+    end()
 
     # Check 60MHz clock.
     test_clock()
@@ -94,20 +102,17 @@ def test():
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
 
-    # Check Apollo debugger shows up.
-    test_apollo_present()
-
-    # Test debug LEDs.
-    test_leds(debug_leds, set_debug_leds, 3.0, 3.4)
+    # Connect to the Apollo debug interface.
+    apollo = ApolloDebugger()
 
     # Check JTAG scan via Apollo finds the FPGA.
-    test_jtag_scan()
+    test_jtag_scan(apollo)
 
     # Flash analyzer bitstream.
-    #flash_analyzer()
+    #flash_analyzer(apollo)
 
     # Configure FPGA with test gateware.
-    configure_fpga()
+    configure_fpga(apollo)
 
     # Check all PHY supply voltages.
     for (testpoint, minimum, maximum) in phy_supplies:
@@ -121,8 +126,17 @@ def test():
     # - PMOD loopback test.
     # - FPGA sensing of target D+/D-, driven by target PHY.
     # 
-    tester = InteractiveSelftest()
-    tester.run_tests()
+    run_self_test(apollo)
+
+    # Test debug LEDs.
+    test_leds(apollo, "debug", debug_leds, set_debug_leds, 3.0, 3.4)
+
+    # Test FPGA LEDs.
+    test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
+
+    # Turn on all LEDs for visual check.
+    set_debug_leds(apollo, 0x1F)
+    set_fpga_leds(apollo, 0x3F)
 
     # Test USB HS comms on each port against the self-test gateware.
     for port in ('CONTROL', 'AUX', 'TARGET-C'):
@@ -279,9 +293,6 @@ def test():
                 connect_boost_supply_to(None)
                 set_load_resistor(None)
 
-    # Test FPGA LEDs.
-    test_leds(fpga_leds, set_fpga_leds, 0, 0.05)
-
     # Request visual check of LEDs.
     request_led_check()
 
@@ -344,10 +355,12 @@ def test():
 
 # Helper functions for testing.
 
-def test_leds(leds, set_leds, off_min, off_max):
+def test_leds(apollo, group, leds, set_leds, off_min, off_max):
+    begin(f"Testing {group} LEDs")
     for i in range(len(leds)):
+        begin(f"Testing {group} LED {info(i)}")
         # Turn on LED
-        set_leds(1 << i)
+        set_leds(apollo, 1 << i)
 
         # Check that this and only this LED is on, with the correct voltage.
         for j, (testpoint, minimum, maximum) in enumerate(leds):
@@ -355,9 +368,9 @@ def test_leds(leds, set_leds, off_min, off_max):
                 test_voltage(testpoint, minimum, maximum)
             else:
                 test_voltage(testpoint, off_min, off_max)
+        end()
 
-    # Turn on all LEDs for visual check.
-    set_leds(0x1F)
+    end()
 
 # Static data required for tests.
 
@@ -376,11 +389,11 @@ phy_supplies = (
     ('TARGET_PHY_3V3',  3.2, 3.4))
 
 fpga_leds = (
-    ('D7_Vf', 0.4, 0.6), # OSVX0603C1E, Purple
-    ('D6_Vf', 0.6, 0.8), # ORH-B36G, Blue
-    ('D5_Vf', 0.4, 0.6), # ORH-G36G, Green
-    ('D4_Vf', 1.2, 1.4), # E6C0603UYAC1UDA, Yellow
-    ('D3_Vf', 1.2, 1.4), # E6C0603SEAC1UDA, Orange
+    ('D7_Vf', 0.6, 0.8), # OSVX0603C1E, Purple
+    ('D6_Vf', 0.7, 0.9), # ORH-B36G, Blue
+    ('D5_Vf', 1.0, 1.2), # ORH-G36G, Green
+    ('D4_Vf', 1.3, 1.5), # E6C0603UYAC1UDA, Yellow
+    ('D3_Vf', 1.3, 1.5), # E6C0603SEAC1UDA, Orange
     ('D2_Vf', 1.4, 1.6)) # OSR50603C1E, Red
 
 debug_leds = ( # Values are 3.3V - Vf
@@ -390,7 +403,13 @@ debug_leds = ( # Values are 3.3V - Vf
     ('D13_Vf', 2.6, 2.7), # OSK40603C1E, Pink
     ('D14_Vf', 2.5, 2.6)) # MHT192WDT-ICE, Ice Blue
 
-cc_thresholds = [(0, 3.3), (0, 3.3)]
+cc_thresholds = [(0, 0.05), (3.25, 3.3)]
 
 if __name__ == "__main__":
-    test()
+    try:
+        test()
+    except Exception as e:
+        reset()
+        print()
+        print(Fore.RED + "FAIL" + Style.RESET_ALL + ": " + str(e))
+        print()
