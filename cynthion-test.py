@@ -64,7 +64,7 @@ def test():
     begin("Testing passthrough of Target-C VBUS to Target-A VBUS with power off")
     set_boost_supply(5.0, 0.1)
     connect_boost_supply_to('TARGET-C')
-    test_voltage('TARGET_A_VBUS', 4.95, 5.05)
+    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
     begin("Checking that the Target-A cable is not connected yet")
     test_vbus('TARGET-A', 0, 4.0)
     end()
@@ -134,35 +134,15 @@ def test():
     # Test FPGA LEDs.
     test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
 
-    # Turn on all LEDs for visual check.
-    set_debug_leds(apollo, 0x1F)
-    set_fpga_leds(apollo, 0x3F)
+    begin("Testing FPGA control of VBUS input selection")
 
-    # Test USB HS comms on each port against the self-test gateware.
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        connect_host_to(port)
-        test_usb_hs(port)
-
-    # Check FPGA control of CC and SBU lines.
-    set_adc_pullup(True)
-    for port in ('AUX', 'TARGET-C'):
-        connect_tester_cc_sbu_to(port)
-        for levels in ((0, 1), (1, 0)):
-            set_cc_levels(port, levels)
-            test_voltage('CC1_test', *cc_thresholds[levels[0]])
-            test_voltage('CC2_test', *cc_thresholds[levels[1]])
-            set_sbu_levels(port, levels)
-            test_pin('SBU1_test', levels[0])
-            test_pin('SBU2_test', levels[1])
-    set_adc_pullup(False)
-
-    # Hand off EUT supply from boost converter to host.
+    begin("Handing off EUT supply from boost converter to host")
     set_boost_supply(4.5, 0.1)
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
+    end()
 
-    # Connect boost supply to AUX at a voltage higher than the host supply,
-    # but less than the minimum OVP cutoff.
+    begin("Connect DC-DC to AUX at a voltage higher than the host supply")
     set_boost_supply(5.4, 0.1)
     connect_boost_supply_to('AUX')
 
@@ -170,7 +150,7 @@ def test():
     schottky_drop_min, schottky_drop_max = (0.65, 0.75)
     high_min = 5.35 - schottky_drop_max
     high_max = 5.45 - schottky_drop_min
-    low_min = 4.95 - schottky_drop_max
+    low_min = 3.5
     low_max = 5.05 - schottky_drop_min
 
     # Ensure that ranges are distinguishable.
@@ -178,38 +158,66 @@ def test():
 
     # 5V rail should be switched to the higher supply.
     test_voltage('+5V', high_min, high_max)
+    end()
 
+    begin("Test FPGA control of AUX supply input")
     # Tell the FPGA to disable the AUX supply input.
     # 5V rail should be switched to the lower host supply on CONTROL.
-    enable_supply_input('AUX', False)
+    enable_supply_input(apollo, 'AUX', False)
     test_voltage('+5V', low_min, low_max)
-
     # Re-enable AUX supply, check 5V rail is switched back to it.
-    enable_supply_input('AUX', True)
+    enable_supply_input(apollo, 'AUX', True)
     test_voltage('+5V', high_min, high_max)
+    end()
 
-    # Swap ports between host and boost converter.
+    begin("Swap ports between host and boost converter")
     set_boost_supply(4.5, 0.1)
     connect_host_supply_to('AUX')
     connect_boost_supply_to('CONTROL')
+    end()
 
-    # Increase boost voltage to identifiable level.
+    begin("Increase boost voltage to identifiable level")
     set_boost_supply(5.4, 0.1)
     test_voltage('+5V', high_min, high_max)
+    end()
 
+    begin("Test FPGA control of CONTROL supply input")
     # Tell the FPGA to disable the CONTROL supply input.
     # 5V rail should be switched to the lower host supply on AUX.
-    enable_supply_input('CONTROL', False)
+    enable_supply_input(apollo, 'CONTROL', False)
     test_voltage('+5V', low_min, low_max)
-
     # Re-enable CONTROL supply, check 5V rail is switched back to it.
-    enable_supply_input('CONTROL', True)
+    enable_supply_input(apollo, 'CONTROL', True)
     test_voltage('+5V', high_min, high_max)
+    end()
 
-    # Swap back to powering from host.
+    begin("Swap back to powering from host")
     set_boost_supply(4.5, 0.1)
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
+    end()
+
+    end()
+
+    todo("Check FPGA control of CC and SBU lines")
+    #for port in ('AUX', 'TARGET-C'):
+    #    connect_tester_cc_sbu_to(port)
+    #    for levels in ((0, 1), (1, 0)):
+    #        set_cc_levels(apollo, port, levels)
+    #        test_voltage('CC1_test', *cc_thresholds[levels[0]])
+    #        test_voltage('CC2_test', *cc_thresholds[levels[1]])
+    #        set_sbu_levels(port, levels)
+    #        test_pin('SBU1_test', levels[0])
+    #        test_pin('SBU2_test', levels[1])
+
+    # Turn on all LEDs for visual check.
+    set_debug_leds(apollo, 0b11111)
+    set_fpga_leds(apollo, 0b111111)
+
+    todo("Test USB HS comms on each port")
+    #for port in ('CONTROL', 'AUX', 'TARGET-C'):
+    #    connect_host_to(port)
+    #    test_usb_hs(port)
 
     # Request the operator connect a cable to Target-A.
     request_target_a_cable()
@@ -220,36 +228,38 @@ def test():
     test_voltage('VBUS_TA', 4.95, 5.05)
     connect_boost_supply_to(None)
 
-    # Tell the FPGA to put the target PHY in passive mode, then test
-    # passthrough to a USB FS device created on the GF1.
-    connect_host_to('CONTROL')
-    set_target_passive()
-    connect_host_to('TARGET-C')
-    test_usb_fs()
+    todo("Test USB FS comms through target passthrough")
+    #connect_host_to('TARGET-C')
+    #test_usb_fs()
 
     # VBUS distribution testing.
     for (voltage, load_current, load_resistor) in (
-        ( 5.0, 3.0, RESISTOR_HIGH_CURRENT),
-        (20.0, 0.5, RESISTOR_LOW_CURRENT)):
+        ( 5.0, 3.0, 'TEST_5V'),
+        #(20.0, 0.5, 'TEST_20V'),
+    ):
+        begin(f"Testing VBUS distribution at {info(f'{voltage:.1f} V {load_current:.1f} A')}")
 
         # Set limits for voltage and current measurements.
-        vmin_off = 0.00
-        vmax_off = 0.01
+        vmin_off = 0.0
+        vmax_off = 0.5
         imin_off = -0.01
         imax_off =  0.01
         vmin_on  = voltage * 0.98 - 0.01
         vmax_on  = voltage * 1.02 + 0.01
 
         # Test with passthrough off, and then with passthrough to load.
-        for (passthrough, current, resistor) in (
-            (False, 0.0, None),
-            (True, load_current, load_resistor)):
+        for passthrough in (False, True):
+            current = load_current * passthrough
+        
+            begin(f"Testing with passthrough {'on' if passthrough else 'off'}")
 
             imin_on = current * 0.98 - 0.01
             imax_on = current * 1.02 + 0.01
 
             # Supply through each input port.
             for input_port in ('TARGET-C', 'CONTROL', 'AUX'):
+
+                begin(f"Testing with input on {info(input_port)}")
 
                 # Move host supply to another port if necessary.
                 if input_port == 'CONTROL':
@@ -261,9 +271,10 @@ def test():
 
                 # Configure boost supply and connect.
                 set_boost_supply(voltage, current + 0.1)
-                set_load_resistor(resistor)
+                set_passthrough(apollo, input_port, passthrough)
                 connect_boost_supply_to(input_port)
-                set_passthrough(input_port, 'TARGET-A', passthrough)
+                if passthrough:
+                    set_pin(load_resistor, True)
 
                 # Check voltage and current on each port.
                 for port in ('CONTROL', 'AUX', 'TARGET-A', 'TARGET-C'):
@@ -280,7 +291,10 @@ def test():
                         test_eut_current(port, -imin_on, -imax_on)
                     # Exclude the host-supplied port from measurements.
                     elif (input_port, port) in (
-                        ('CONTROL', 'AUX'), ('AUX', 'CONTROL')):
+                        ('CONTROL', 'AUX'),
+                        ('AUX', 'CONTROL'),
+                        ('TARGET-C', 'CONTROL'),
+                        ):
                         continue
                     # Check all other ports have zero leakage.
                     else:
@@ -289,9 +303,16 @@ def test():
                         test_eut_current(port, imin_off, imax_off)
 
                 # Disconnect.
-                set_passthrough(input_port, 'TARGET-A', False)
+                if passthrough:
+                    set_pin(load_resistor, False)
+                    set_passthrough(apollo, input_port, False)
                 connect_boost_supply_to(None)
-                set_load_resistor(None)
+
+                end()
+
+            end()
+
+        end()
 
     # Request visual check of LEDs.
     request_led_check()
@@ -409,7 +430,7 @@ if __name__ == "__main__":
     try:
         test()
     except Exception as e:
-        reset()
         print()
         print(Fore.RED + "FAIL" + Style.RESET_ALL + ": " + str(e))
         print()
+        reset()

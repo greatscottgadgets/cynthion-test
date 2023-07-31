@@ -1,6 +1,10 @@
 from colorama import Fore, Back, Style
 from apollo_fpga import ApolloDebugger
-from selftest import InteractiveSelftest, REGISTER_LEDS
+from selftest import InteractiveSelftest, \
+    REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
+    REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
+    REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
+    REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C
 from tps55288 import TPS55288
 from greatfet import *
 from time import sleep
@@ -92,6 +96,22 @@ vbus_channels = {
     'AUX':      'VBUS_AUX',
     'TARGET-A': 'VBUS_TA',
     'TARGET-C': 'VBUS_TC',
+}
+
+vbus_registers = {
+    'CONTROL': REGISTER_CON_VBUS_EN,
+    'AUX':     REGISTER_AUX_VBUS_EN,
+}
+
+passthrough_registers = {
+    'CONTROL':  REGISTER_PASS_CONTROL,
+    'AUX':      REGISTER_PASS_AUX,
+    'TARGET-C': REGISTER_PASS_TARGET_C,
+}
+
+typec_registers = {
+    'CONTROL': (REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE),
+    'AUX': (REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE),
 }
 
 gf = GreatFET()
@@ -223,7 +243,17 @@ def connect_host_to(port):
     D_OEn_3.low()
 
 def check_cc_resistances(port):
-    todo(f"Checking CC resistances on {info(port)}")
+    begin(f"Checking CC resistances on {info(port)}")
+    vmin, vmax = (1.6, 3.3)
+    mux_select('CC1_test')
+    connect_tester_cc_sbu_to(port)
+    set_pin('CC_PULL_UP', False)
+    set_pin('CC1_test', None)
+    set_pin('CC2_test', None)
+    test_voltage('CC1_test', vmin, vmax)
+    test_voltage('CC2_test', vmin, vmax)
+    set_pin('CC_PULL_UP', True)
+    end()
 
 def test_leakage(port):
     test_vbus(port, 0, 0.3)
@@ -364,6 +394,7 @@ def set_debug_leds(apollo, bitmask):
 def set_fpga_leds(apollo, bitmask):
     start(f"Setting FPGA LEDs to 0b{bitmask:05b}")
     apollo.registers.register_write(REGISTER_LEDS, bitmask)
+    assert(apollo.registers.register_read(REGISTER_LEDS) == bitmask)
     done()
 
 def test_jtag_scan(apollo):
@@ -399,24 +430,28 @@ def run_self_test(apollo):
     selftest = InteractiveSelftest()
     selftest._MustUse__used = True
     selftest.dut = apollo
-    for name, member in inspect.getmembers(selftest):
-        if inspect.ismethod(member) and name.startswith('test_'):
-            method = member
-            description = method.__name__.replace("test_", "")
-            try:
-                start(description)
-                method(apollo)
-                done()
-            except Exception as e:
-                fail()
-                raise RuntimeError(f"{description} self-test failed")
+    for method in [
+        selftest.test_debug_connection,
+        selftest.test_sideband_phy,
+        selftest.test_host_phy,
+        selftest.test_target_phy,
+        selftest.test_hyperram,
+        selftest.test_aux_typec_controller,
+        selftest.test_target_typec_controller,
+        selftest.test_power_monitor_controller,
+    ]:
+        description = method.__name__.replace("test_", "")
+        try:
+            start(description)
+            method(apollo)
+            done()
+        except Exception as e:
+            fail()
+            raise RuntimeError(f"{description} self-test failed")
     end()
 
 def test_usb_hs(port):
     todo(f"Testing USB HS comms on {info(port)}")
-
-def set_adc_pullup(enable):
-    todo(f"Enabling ADC pullup")
 
 def connect_tester_cc_sbu_to(port):
     item(f"Connecting tester CC/SBU lines to {info(port)}")
@@ -429,32 +464,59 @@ def connect_tester_cc_sbu_to(port):
     SIG1_OEn.low()
     SIG2_OEn.low()
 
-def set_cc_levels(port, levels):
-    todo(f"Setting CC levels on {info(port)} to {info(levels)}")
+def write_register(apollo, reg, value):
+    apollo.registers.register_write(reg, value)
+    readback = apollo.registers.register_read(reg)
+    if readback != value:
+        raise ValueError(
+            f"Wrote 0x{value:02X} to register {reg} but read back 0x{readback:02X}")
+
+def enable_supply_input(apollo, port, enable):
+    start(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
+    write_register(apollo, vbus_registers[port], enable)
+    done()
+
+def set_cc_levels(apollo, port, levels):
+    start(f"Setting CC levels on {info(port)} to {info(levels)}")
+    value = 0b01 * levels[0] | 0b10 * levels[1]
+    reg_addr, reg_val = typec_registers[port]
+    write_register(apollo, reg_addr, (0x02 << 8) | 1)
+    write_register(apollo, reg_val, value)
+    done()
 
 def set_sbu_levels(port, levels):
     todo(f"Setting SBU levels on {info(port)} to {info(levels)}")
 
-def connect_host_supply_to(port):
-    todo(f"Connecting host supply to {port}")
-
-def enable_supply_input(port, enable):
-    todo(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
+def connect_host_supply_to(*ports):
+    item(f"Connecting host supply to {str.join(' and ', map(info, ports))}")
+    if 'CONTROL' in ports:
+        HOST_VBUS_CON.high()
+    if 'AUX' in ports:
+        HOST_VBUS_AUX.high()
+    if 'CONTROL' not in ports:
+        HOST_VBUS_CON.low()
+    if 'AUX' not in ports:
+        HOST_VBUS_AUX.low()
 
 def request_target_a_cable():
-    todo(f"Asking the user insert the Target-A cable into EUT")
+    print()
+    print(
+        Fore.BLUE +
+        "=== Connect cable to Target-A port on EUT and press ENTER ===" +
+        Style.RESET_ALL)
+    input()
+
+def set_passthrough(apollo, port, enable):
+    action = 'Enabling' if enable else 'Disabling'
+    start(f"{action} VBUS passthrough for {info(port)}")
+    write_register(apollo, passthrough_registers[port], enable)
+    done()
 
 def set_target_passive():
     todo(f"Setting target PHY to passive mode")
 
 def test_usb_fs():
-    todo(f"Testing USB FS comms on {port}")
-
-def set_load_resistor(resistor):
-    pass
-
-def set_passthrough(input_port, output_port, enable):
-    pass
+    todo(f"Testing USB FS comms through target passthrough")
 
 def test_vbus(input_port, vmin, vmax):
     test_voltage(vbus_channels[input_port], vmin, vmax)
