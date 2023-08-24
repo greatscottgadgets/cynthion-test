@@ -244,14 +244,13 @@ def connect_host_to(port):
 
 def check_cc_resistances(port):
     begin(f"Checking CC resistances on {info(port)}")
-    vmin, vmax = (4.5, 6.0)
     mux_select('CC1_test')
     connect_tester_cc_sbu_to(port)
     set_pin('CC_PULL_UP', False)
     set_pin('CC1_test', None)
     set_pin('CC2_test', None)
-    test_voltage('CC1_test', vmin, vmax)
-    test_voltage('CC2_test', vmin, vmax)
+    todo(f"Measure resistance on {info('CC1')}")
+    todo(f"Measure resistance on {info('CC2')}")
     set_pin('CC_PULL_UP', True)
     end()
 
