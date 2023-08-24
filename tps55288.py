@@ -24,7 +24,7 @@ class TPS55288(I2CRegisterBasedDevice):
         if limit < 0 or limit > 3.175:
             raise ValueError("Current limit out of range")
         value = int(limit / 0.05)
-        self.write(IOUT_LIMIT, value)
+        self.write(IOUT_LIMIT, 0x80 | value)
 
     def status(self):
         print("Voltage: %.2fV" % self.voltage())
