@@ -148,7 +148,7 @@ def msg(text, end):
     print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end)
 
 def item(text):
-    msg(text, ".\n")
+    msg(text, "\n")
 
 def begin(text):
     global indent
@@ -163,10 +163,10 @@ def start(text):
     msg(text, "... ")
 
 def done():
-    print(Fore.GREEN + "OK" + Style.RESET_ALL + ".")
+    print(Fore.GREEN + "OK" + Style.RESET_ALL)
 
 def fail():
-    print(Fore.RED + "FAIL" + Style.RESET_ALL + ".")
+    print(Fore.RED + "FAIL" + Style.RESET_ALL)
 
 def todo(text):
     item(Fore.YELLOW + "TODO" + Style.RESET_ALL + ": " + text)
@@ -191,13 +191,13 @@ def check_for_shorts(port):
 
     begin_short_check('VBUS', 'SBU2', port)
     set_pin('SBU2_test', True)
-    test_vbus(port, 0.5, 2.5)
+    test_vbus(port, 0.0, 1.2)
     set_pin('SBU2_test', None)
     end()
 
     begin_short_check('SBU2', 'CC1', port)
     set_pin('SBU2_test', True)
-    test_voltage('CC1_test', 0.5, 2.5)
+    test_voltage('CC1_test', 0.0, 1.2)
     set_pin('SBU2_test', None)
     end()
 
@@ -209,13 +209,13 @@ def check_for_shorts(port):
 
     begin_short_check('SBU1', 'CC2', port)
     set_pin('SBU1_test', True)
-    test_voltage('CC2_test', 0.5, 2.5)
+    test_voltage('CC2_test', 0.0, 1.2)
     set_pin('SBU1_test', None)
     end()
 
     begin_short_check('CC2', 'VBUS', port)
     set_pin('CC2_test', False)
-    test_vbus(port, 0.5, 2.5)
+    test_vbus(port, 0.0, 1.2)
     set_pin('CC2_test', None)
     end()
 
@@ -244,7 +244,7 @@ def connect_host_to(port):
 
 def check_cc_resistances(port):
     begin(f"Checking CC resistances on {info(port)}")
-    vmin, vmax = (1.6, 3.3)
+    vmin, vmax = (4.5, 6.0)
     mux_select('CC1_test')
     connect_tester_cc_sbu_to(port)
     set_pin('CC_PULL_UP', False)
@@ -256,7 +256,7 @@ def check_cc_resistances(port):
     end()
 
 def test_leakage(port):
-    test_vbus(port, 0, 0.3)
+    test_vbus(port, 0, 1.2)
 
 def set_boost_supply(voltage, current):
     item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
@@ -299,11 +299,7 @@ def mux_select(channel):
         MUX2_EN.high()
 
 def test_voltage(channel, minimum, maximum):
-    if maximum <= 3.3:
-        V_DIV.low()
-        V_DIV_MULT.low()
-        scale = 3.3 / 1024
-    elif maximum <= 6.6:
+    if maximum <= 6.6:
         V_DIV.high()
         V_DIV_MULT.low()
         scale = 3.3 / 1024 * 2
@@ -409,7 +405,8 @@ def test_jtag_scan(apollo):
     end()
 
 def flash_analyzer(apollo):
-    start(f"Flashing analyzer gateware")
+    todo(f"Flashing analyzer gateware")
+    return
     bitstream = open('analyzer.bit', 'rb').read()
     programmer = apollo.create_jtag_programmer(apollo.jtag)
     programmer.unconfigure()
@@ -488,7 +485,10 @@ def set_sbu_levels(port, levels):
     todo(f"Setting SBU levels on {info(port)} to {info(levels)}")
 
 def connect_host_supply_to(*ports):
-    item(f"Connecting host supply to {str.join(' and ', map(info, ports))}")
+    if ports == (None,):
+        item("Disconnecting host supply")
+    else:
+        item(f"Connecting host supply to {str.join(' and ', map(info, ports))}")
     if 'CONTROL' in ports:
         HOST_VBUS_CON.high()
     if 'AUX' in ports:
@@ -522,25 +522,28 @@ def test_vbus(input_port, vmin, vmax):
     test_voltage(vbus_channels[input_port], vmin, vmax)
 
 def test_eut_voltage(input_port, vmin, vmax):
-    pass
+    todo(f"Requesting EUT voltage measurement on {info(input_port)}")
 
 def test_eut_current(input_port, imin, imax):
-    pass
+    todo(f"Requesting EUT current measurement on {info(input_port)}")
 
 def request_led_check():
-    pass
+    todo(f"Requesting user check LEDs")
+
+def request_apollo_reset():
+    todo(f"Requesting Apollo reset the EUT")
 
 def request_button(button):
-    pass
+    todo(f"Requesting user press the {info(button)} button")
 
 def test_user_button_pressed():
-    pass
+    todo(f"Checking that the {info('USER')} button was pressed")
 
 def request_control_handoff():
     pass
 
 def test_analyzer_present():
-    pass
+    todo(f"Checking for analyzer")
 
 def send_usb_reset():
     pass

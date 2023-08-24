@@ -21,7 +21,7 @@ class TPS55288(I2CRegisterBasedDevice):
         self.write(VREF_H, value >> 8)
 
     def set_current_limit(self, limit):
-        if limit < 0 or limit > 3.175:
+        if limit < 0 or limit > 6.35:
             raise ValueError("Current limit out of range")
         value = int(limit / 0.05)
         self.write(IOUT_LIMIT, 0x80 | value)

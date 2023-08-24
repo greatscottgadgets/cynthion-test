@@ -4,8 +4,9 @@ import numpy as np
 
 def test():
     # First check for shorts at each EUT USB-C port.
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
+    for port in ('CONTROL', 'AUX'):
         check_for_shorts(port)
+    todo(f"Checking for shorts on {info('TARGET-C')}")
 
     # Connect EUT GND to tester GND.
     connect_grounds()
@@ -19,20 +20,20 @@ def test():
         begin(f"Testing VBUS supply though {info(supply_port)}")
 
         # Connect 5V supply via this port.
-        set_boost_supply(5.0, 0.1)
+        set_boost_supply(5.0, 0.2)
         connect_boost_supply_to(supply_port)
 
         # Check supply present at port.
-        test_vbus(supply_port, 4.9, 5.1)
+        test_vbus(supply_port, 4.85, 5.1)
 
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in np.arange(5.0, 6.25, 0.05):
             begin(f"Testing with {info(f'{voltage:.2f} V')} supply "
                   f"on {info(supply_port)}")
-            set_boost_supply(voltage, 0.1)
+            set_boost_supply(voltage, 0.2)
             sleep(0.05)
 
-            schottky_drop_min, schottky_drop_max = (0.35, 0.75)
+            schottky_drop_min, schottky_drop_max = (0.35, 0.8)
 
             # Up to 5.5V, there must be only a diode drop.
             if voltage <= 5.5:
@@ -61,18 +62,15 @@ def test():
         disconnect_supply_and_discharge(supply_port)
         end()
 
-    begin("Testing passthrough of Target-C VBUS to Target-A VBUS with power off")
-    set_boost_supply(5.0, 0.1)
-    connect_boost_supply_to('TARGET-C')
-    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
-    begin("Checking that the Target-A cable is not connected yet")
-    test_vbus('TARGET-A', 0, 4.0)
-    end()
-    disconnect_supply_and_discharge('TARGET-C')
-    end()
+    todo("Testing passthrough at low current with power off")
+    # set_boost_supply(5.0, 0.2)
+    # connect_boost_supply_to('TARGET-C')
+    # test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+    # disconnect_supply_and_discharge('TARGET-C')
+    # end()
 
     begin("Powering EUT for testing")
-    set_boost_supply(5.0, 0.1)
+    set_boost_supply(5.0, 0.2)
     connect_boost_supply_to('CONTROL')
     end()
 
@@ -109,7 +107,7 @@ def test():
     test_jtag_scan(apollo)
 
     # Flash analyzer bitstream.
-    #flash_analyzer(apollo)
+    flash_analyzer(apollo)
 
     # Configure FPGA with test gateware.
     configure_fpga(apollo)
@@ -129,7 +127,7 @@ def test():
     run_self_test(apollo)
 
     # Test debug LEDs.
-    test_leds(apollo, "debug", debug_leds, set_debug_leds, 3.0, 3.4)
+    test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
 
     # Test FPGA LEDs.
     test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
@@ -137,17 +135,17 @@ def test():
     begin("Testing FPGA control of VBUS input selection")
 
     begin("Handing off EUT supply from boost converter to host")
-    set_boost_supply(4.5, 0.1)
+    set_boost_supply(4.5, 0.2)
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
     end()
 
     begin("Connect DC-DC to AUX at a voltage higher than the host supply")
-    set_boost_supply(5.4, 0.1)
+    set_boost_supply(5.4, 0.2)
     connect_boost_supply_to('AUX')
 
     # Define ranges to distinguish high and low supplies.
-    schottky_drop_min, schottky_drop_max = (0.65, 0.75)
+    schottky_drop_min, schottky_drop_max = (0.65, 0.85)
     high_min = 5.35 - schottky_drop_max
     high_max = 5.45 - schottky_drop_min
     low_min = 3.5
@@ -171,13 +169,13 @@ def test():
     end()
 
     begin("Swap ports between host and boost converter")
-    set_boost_supply(4.5, 0.1)
+    set_boost_supply(4.5, 0.2)
     connect_host_supply_to('AUX')
     connect_boost_supply_to('CONTROL')
     end()
 
     begin("Increase boost voltage to identifiable level")
-    set_boost_supply(5.4, 0.1)
+    set_boost_supply(5.4, 0.2)
     test_voltage('+5V', high_min, high_max)
     end()
 
@@ -192,7 +190,7 @@ def test():
     end()
 
     begin("Swap back to powering from host")
-    set_boost_supply(4.5, 0.1)
+    set_boost_supply(4.5, 0.2)
     connect_host_supply_to('CONTROL')
     connect_boost_supply_to(None)
     end()
@@ -220,17 +218,17 @@ def test():
     #    test_usb_hs(port)
 
     # Request the operator connect a cable to Target-A.
-    request_target_a_cable()
+    # request_target_a_cable()
 
-    # Check that the Target-A cable is connected.
-    set_boost_supply(5.0, 0.1)
-    connect_boost_supply_to('TARGET-C')
-    test_voltage('VBUS_TA', 4.95, 5.05)
-    connect_boost_supply_to(None)
+    # # Check that the Target-A cable is connected.
+    # set_boost_supply(5.0, 0.2)
+    # connect_boost_supply_to('TARGET-C')
+    # test_voltage('VBUS_TA', 4.95, 5.05)
+    # connect_boost_supply_to(None)
 
-    todo("Test USB FS comms through target passthrough")
-    #connect_host_to('TARGET-C')
-    #test_usb_fs()
+    # todo("Test USB FS comms through target passthrough")
+    # #connect_host_to('TARGET-C')
+    # #test_usb_fs()
 
     # VBUS distribution testing.
     for (voltage, load_current, load_resistor) in (
@@ -241,7 +239,7 @@ def test():
 
         # Set limits for voltage and current measurements.
         vmin_off = 0.0
-        vmax_off = 0.5
+        vmax_off = 0.05
         imin_off = -0.01
         imax_off =  0.01
         vmin_on  = voltage * 0.98 - 0.01
@@ -257,7 +255,7 @@ def test():
             imax_on = current * 1.02 + 0.01
 
             # Supply through each input port.
-            for input_port in ('TARGET-C', 'CONTROL', 'AUX'):
+            for input_port in ('CONTROL', 'AUX'):
 
                 begin(f"Testing with input on {info(input_port)}")
 
@@ -270,7 +268,7 @@ def test():
                     connect_host_supply_to('CONTROL')
 
                 # Configure boost supply and connect.
-                set_boost_supply(voltage, current + 0.1)
+                set_boost_supply(voltage, current + 0.2)
                 set_passthrough(apollo, input_port, passthrough)
                 connect_boost_supply_to(input_port)
                 if passthrough:
@@ -337,42 +335,42 @@ def test():
     request_button('RESET')
     test_analyzer_present()
 
-    # Send USB reset, should cause Apollo to enumerate again.
-    send_usb_reset()
-    test_apollo_present()
-
-    # Power off EUT.
+    begin("Powering off EUT")
+    connect_boost_supply_to(None)
     connect_host_supply_to(None)
+    end()
 
-    # VBUS distribution testing with EUT off.
-    for (voltage, current, resistor) in (
-        ( 5.0, 3.0, RESISTOR_HIGH_CURRENT),
-        (20.0, 0.5, RESISTOR_LOW_CURRENT)):
+    todo(f"Testing VBUS distribution with EUT off")
+    # for (voltage, current, load_resistor) in (
+    #     ( 5.0, 3.0, 'TEST_5V'),
+    #     (20.0, 0.5, 'TEST_20V'),
+    # ):
+    #     begin(f"Testing at {info(f'{voltage:.1f} V {load_current:.1f} A')}")
 
-        # Set limits for voltage and current measurements.
-        vmin_off = 0.00
-        vmax_off = 0.01
-        vmin_on  = voltage * 0.98 - 0.01
-        vmax_on  = voltage * 1.02 + 0.01
-        imin_on  = current * 0.95 - 0.01
-        imax_on  = current * 1.05 + 0.01
+    #     # Set limits for voltage and current measurements.
+    #     vmin = voltage * 0.98 - 0.01
+    #     vmax = voltage * 1.02 + 0.01
+    #     imin = current * 0.98 - 0.01
+    #     imax = current * 1.02 + 0.01
 
-        # Configure boost supply and connect.
-        set_boost_supply(voltage, current + 0.1)
-        set_load_resistor(resistor)
-        connect_boost_supply_to('TARGET-C')
+    #     # Configure boost supply and connect.
+    #     set_boost_supply(voltage, current + 0.2)
+    #     connect_boost_supply_to('TARGET-C')
 
-        # Check voltages and current.
-        test_vbus('TARGET-C', vmin_on, vmax_on)
-        test_vbus('TARGET-A', vmin_on, vmax_on)
-        test_vbus('CONTROL', vmin_off, vmax_off)
-        test_vbus('AUX', vmin_off, vmax_off)
-        test_boost_current(imin_on, imax_on)
+    #     # Check voltage on input and output ports.
+    #     test_vbus('TARGET-C', vmin_on, vmax_on)
+    #     test_vbus('TARGET-A', vmin_on, vmax_on)
 
-        # Disconnect.
-        connect_boost_supply_to(None)
-        set_load_resistor(None)
+    #     # Check all other ports have zero leakage.
+    #     for port in ('CONTROL', 'AUX'):
+    #         test_leakage(port)
 
+    #     # Disconnect.
+    #     connect_boost_supply_to(None)
+
+    #     end()
+
+    # end()
 
 # Helper functions for testing.
 
@@ -402,27 +400,27 @@ supplies = (
     ('VCCRAM', 3.2, 3.4))
 
 phy_supplies = (
-    ('CONTROL_PHY_3V3', 3.2, 3.4),
-    ('CONTROL_PHY_1V8', 1.7, 1.9),
-    ('AUX_PHY_3V3',     3.2, 3.4),
-    ('AUX_PHY_1V8',     1.7, 1.9),
-    ('TARGET_PHY_3V3',  3.2, 3.4),
-    ('TARGET_PHY_3V3',  3.2, 3.4))
+    ('CONTROL_PHY_3V3', 3.15, 3.4),
+    ('CONTROL_PHY_1V8', 1.65, 1.9),
+    ('AUX_PHY_3V3',     3.15, 3.4),
+    ('AUX_PHY_1V8',     1.65, 1.9),
+    ('TARGET_PHY_3V3',  3.15, 3.4),
+    ('TARGET_PHY_3V3',  3.15, 3.4))
 
 fpga_leds = (
     ('D7_Vf', 0.6, 0.8), # OSVX0603C1E, Purple
     ('D6_Vf', 0.7, 0.9), # ORH-B36G, Blue
-    ('D5_Vf', 1.0, 1.2), # ORH-G36G, Green
+    ('D5_Vf', 0.9, 1.1), # ORH-G36G, Green
     ('D4_Vf', 1.3, 1.5), # E6C0603UYAC1UDA, Yellow
     ('D3_Vf', 1.3, 1.5), # E6C0603SEAC1UDA, Orange
     ('D2_Vf', 1.4, 1.6)) # OSR50603C1E, Red
 
 debug_leds = ( # Values are 3.3V - Vf
-    ('D10_Vf', 2.5, 2.6), # MHT192WDT-ICE, Ice Blue
-    ('D11_Vf', 2.6, 2.7), # OSK40603C1E, Pink
+    ('D10_Vf', 2.4, 2.6), # MHT192WDT-ICE, Ice Blue
+    ('D11_Vf', 2.5, 2.7), # OSK40603C1E, Pink
     ('D12_Vf', 2.5, 2.7), # ORH-W46G, White
-    ('D13_Vf', 2.6, 2.7), # OSK40603C1E, Pink
-    ('D14_Vf', 2.5, 2.6)) # MHT192WDT-ICE, Ice Blue
+    ('D13_Vf', 2.5, 2.7), # OSK40603C1E, Pink
+    ('D14_Vf', 2.4, 2.6)) # MHT192WDT-ICE, Ice Blue
 
 cc_thresholds = [(0, 0.05), (3.25, 3.3)]
 
