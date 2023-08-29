@@ -4,16 +4,21 @@ import numpy as np
 
 def test():
     # First check for shorts at each EUT USB-C port.
+    begin("Checking for shorts on all USB-C ports")
     for port in ('CONTROL', 'AUX'):
         check_for_shorts(port)
     todo(f"Checking for shorts on {info('TARGET-C')}")
+    end()
 
     # Connect EUT GND to tester GND.
     connect_grounds()
 
     # Check CC resistances with EUT unpowered.
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
+    begin("Checking CC resistances with EUT unpowered")
+    for port in ('CONTROL', 'AUX'):
         check_cc_resistances(port)
+    todo(f"Checking CC resistances on {info('TARGET-C')}")
+    end()
 
     # Test supplying VBUS through CONTROL and AUX ports.
     for supply_port in ('CONTROL', 'AUX'):
@@ -80,8 +85,8 @@ def test():
     end()
 
     begin("Checking CC resistances with EUT powered")
-    for port in ('AUX', 'TARGET-C'):
-        check_cc_resistances(port)
+    check_cc_resistances('AUX')
+    todo(f"Checking CC resistances on {info('TARGET-C')}")
     end()
 
     # Check 60MHz clock.
@@ -197,16 +202,23 @@ def test():
 
     end()
 
-    todo("Check FPGA control of CC and SBU lines")
-    #for port in ('AUX', 'TARGET-C'):
-    #    connect_tester_cc_sbu_to(port)
-    #    for levels in ((0, 1), (1, 0)):
-    #        set_cc_levels(apollo, port, levels)
-    #        test_voltage('CC1_test', *cc_thresholds[levels[0]])
-    #        test_voltage('CC2_test', *cc_thresholds[levels[1]])
-    #        set_sbu_levels(port, levels)
-    #        test_pin('SBU1_test', levels[0])
-    #        test_pin('SBU2_test', levels[1])
+    begin("Checking FPGA control of CC and SBU lines")
+    for port in ('AUX',): #
+        begin_cc_measurement(port)
+        for levels in ((0, 1), (1, 0)):
+            set_cc_levels(apollo, port, levels)
+            for pin, level in zip(('CC1', 'CC2'), levels):
+                if level:
+                    check_cc_resistance(pin, 4.1, 6.1)
+                else:
+                    check_cc_resistance(pin, 50, 200)
+            set_sbu_levels(port, levels)
+            todo("Checking measured SBU levels")
+            #test_pin('SBU1_test', levels[0])
+            #test_pin('SBU2_test', levels[1])
+        end_cc_measurement()
+    todo("Check FPGA control of TARGET-C CC and SBU lines")
+    end()
 
     # Turn on all LEDs for visual check.
     set_debug_leds(apollo, 0b11111)
@@ -422,8 +434,6 @@ debug_leds = ( # Values are 3.3V - Vf
     ('D13_Vf', 2.5, 2.7), # OSK40603C1E, Pink
     ('D14_Vf', 2.4, 2.6)) # MHT192WDT-ICE, Ice Blue
 
-cc_thresholds = [(0, 0.05), (3.25, 3.3)]
-
 if __name__ == "__main__":
     try:
         test()
@@ -431,4 +441,4 @@ if __name__ == "__main__":
         print()
         print(Fore.RED + "FAIL" + Style.RESET_ALL + ": " + str(e))
         print()
-        reset()
+    reset()

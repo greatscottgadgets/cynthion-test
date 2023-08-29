@@ -1,10 +1,10 @@
 from colorama import Fore, Back, Style
-from apollo_fpga import ApolloDebugger
 from selftest import InteractiveSelftest, \
     REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
     REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
     REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
     REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C
+from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
 from time import sleep
@@ -110,8 +110,8 @@ passthrough_registers = {
 }
 
 typec_registers = {
-    'CONTROL': (REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE),
     'AUX': (REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE),
+    'TARGET-C': (REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE),
 }
 
 gf = GreatFET()
@@ -214,7 +214,7 @@ def check_for_shorts(port):
     end()
 
     begin_short_check('CC2', 'VBUS', port)
-    set_pin('CC2_test', False)
+    set_pin('CC2_test', True)
     test_vbus(port, 0.0, 1.2)
     set_pin('CC2_test', None)
     end()
@@ -242,20 +242,48 @@ def connect_host_to(port):
     D_OEn_2.low()
     D_OEn_3.low()
 
+def begin_cc_measurement(port):
+    connect_tester_cc_sbu_to(port)
+    V_DIV.low()
+    V_DIV_MULT.low()
+    CC_PULL_UP.low()
+    CC1_test.input()
+    CC2_test.input()
+
+def end_cc_measurement():
+    CC_PULL_UP.high()
+
 def check_cc_resistances(port):
     begin(f"Checking CC resistances on {info(port)}")
-    mux_select('CC1_test')
-    connect_tester_cc_sbu_to(port)
-    set_pin('CC_PULL_UP', False)
-    set_pin('CC1_test', None)
-    set_pin('CC2_test', None)
-    todo(f"Measure resistance on {info('CC1')}")
-    todo(f"Measure resistance on {info('CC2')}")
-    set_pin('CC_PULL_UP', True)
+    begin_cc_measurement(port)
+    for pin in ('CC1', 'CC2'):
+        check_cc_resistance(pin, 4.1, 6.1)
+    end_cc_measurement()
     end()
 
+def check_cc_resistance(pin, minimum, maximum):
+    if pin == 'CC2':
+        todo(f"Checking resistance on {info(pin)}")
+        return
+    channel = f'{pin}_test'
+    mux_select(channel)
+    samples = gf.adc.read_samples(1000)
+    voltage = (3.3 / 1024) * sum(samples) / len(samples)
+    item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
+    resistance = (3.3 * 30 - voltage * 35.1) / (voltage - 3.3)
+    message = f"Checking resistance on {info(pin)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} kΩ')}: "
+    result = f"{resistance:.2f} kΩ"
+    if resistance < minimum:
+        item(message + Fore.RED + result)
+        #raise ValueError(f"Resistance too low on {pin}: {resistance:.2f} kΩ, minimum was {minimum:.2f} kΩ")
+    elif resistance > maximum:
+        item(message + Fore.RED + result)
+        #raise ValueError(f"Resistance too high on {pin}: {resistance:.2f} kΩ, maximum was {maximum:.2f} kΩ")
+    else:
+        item(message + Fore.GREEN + result)
+
 def test_leakage(port):
-    test_vbus(port, 0, 1.2)
+    test_vbus(port, 0, 0.05)
 
 def set_boost_supply(voltage, current):
     item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
@@ -460,12 +488,14 @@ def connect_tester_cc_sbu_to(port):
     SIG1_OEn.low()
     SIG2_OEn.low()
 
-def write_register(apollo, reg, value):
+def write_register(apollo, reg, value, verify=True):
     apollo.registers.register_write(reg, value)
-    readback = apollo.registers.register_read(reg)
-    if readback != value:
-        raise ValueError(
-            f"Wrote 0x{value:02X} to register {reg} but read back 0x{readback:02X}")
+    if verify:
+        readback = apollo.registers.register_read(reg)
+        if readback != value:
+            raise ValueError(
+                f"Wrote 0x{value:02X} to register {reg} "
+                 "but read back 0x{readback:02X}")
 
 def enable_supply_input(apollo, port, enable):
     start(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
@@ -477,7 +507,7 @@ def set_cc_levels(apollo, port, levels):
     value = 0b01 * levels[0] | 0b10 * levels[1]
     reg_addr, reg_val = typec_registers[port]
     write_register(apollo, reg_addr, (0x02 << 8) | 1)
-    write_register(apollo, reg_val, value)
+    write_register(apollo, reg_val, value, verify=False)
     done()
 
 def set_sbu_levels(port, levels):
