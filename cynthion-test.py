@@ -203,7 +203,8 @@ def test():
     end()
 
     begin("Checking FPGA control of CC and SBU lines")
-    for port in ('AUX',): #
+    for port in ('AUX',):
+        begin(f"Checking control of {info(port)} CC lines")
         begin_cc_measurement(port)
         for levels in ((0, 1), (1, 0)):
             set_cc_levels(apollo, port, levels)
@@ -212,10 +213,14 @@ def test():
                     check_cc_resistance(pin, 4.1, 6.1)
                 else:
                     check_cc_resistance(pin, 50, 200)
+        end_cc_measurement()
+        end()
+        begin(f"Checking control of {info(port)} SBU lines")
+        for levels in ((0, 1), (1, 0)):
             set_sbu_levels(apollo, port, levels)
             test_pin('SBU1_test', levels[0])
             test_pin('SBU2_test', levels[1])
-        end_cc_measurement()
+        end()
     todo("Check FPGA control of TARGET-C CC and SBU lines")
     end()
 
