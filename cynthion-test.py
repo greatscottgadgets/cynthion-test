@@ -212,10 +212,9 @@ def test():
                     check_cc_resistance(pin, 4.1, 6.1)
                 else:
                     check_cc_resistance(pin, 50, 200)
-            set_sbu_levels(port, levels)
-            todo("Checking measured SBU levels")
-            #test_pin('SBU1_test', levels[0])
-            #test_pin('SBU2_test', levels[1])
+            set_sbu_levels(apollo, port, levels)
+            test_pin('SBU1_test', levels[0])
+            test_pin('SBU2_test', levels[1])
         end_cc_measurement()
     todo("Check FPGA control of TARGET-C CC and SBU lines")
     end()

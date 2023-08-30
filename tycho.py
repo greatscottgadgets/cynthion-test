@@ -3,7 +3,8 @@ from selftest import InteractiveSelftest, \
     REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
     REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
     REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
-    REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C
+    REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
+    REGISTER_AUX_SBU, REGISTER_TARGET_SBU
 from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
@@ -112,6 +113,11 @@ passthrough_registers = {
 typec_registers = {
     'AUX': (REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE),
     'TARGET-C': (REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE),
+}
+
+sbu_registers = {
+    'AUX': REGISTER_AUX_SBU,
+    'TARGET-C': REGISTER_TARGET_SBU
 }
 
 gf = GreatFET()
@@ -495,7 +501,7 @@ def write_register(apollo, reg, value, verify=True):
         if readback != value:
             raise ValueError(
                 f"Wrote 0x{value:02X} to register {reg} "
-                 "but read back 0x{readback:02X}")
+                f"but read back 0x{readback:02X}")
 
 def enable_supply_input(apollo, port, enable):
     start(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
@@ -510,8 +516,11 @@ def set_cc_levels(apollo, port, levels):
     write_register(apollo, reg_val, value, verify=False)
     done()
 
-def set_sbu_levels(port, levels):
-    todo(f"Setting SBU levels on {info(port)} to {info(levels)}")
+def set_sbu_levels(apollo, port, levels):
+    start(f"Setting SBU levels on {info(port)} to {info(levels)}")
+    value = 0b01 * levels[0] | 0b10 * levels[1]
+    write_register(apollo, sbu_registers[port], value, verify=False)
+    done()
 
 def connect_host_supply_to(*ports):
     if ports == (None,):
