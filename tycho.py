@@ -281,16 +281,7 @@ def check_cc_resistance(pin, minimum, maximum):
     voltage = (3.3 / 1024) * sum(samples) / len(samples)
     item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
     resistance = (3.3 * 30 - voltage * 35.1) / (voltage - 3.3)
-    message = f"Checking resistance on {info(pin)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} kΩ')}: "
-    result = f"{resistance:.2f} kΩ"
-    if resistance < minimum:
-        item(message + Fore.RED + result)
-        #raise ValueError(f"Resistance too low on {pin}: {resistance:.2f} kΩ, minimum was {minimum:.2f} kΩ")
-    elif resistance > maximum:
-        item(message + Fore.RED + result)
-        #raise ValueError(f"Resistance too high on {pin}: {resistance:.2f} kΩ, maximum was {maximum:.2f} kΩ")
-    else:
-        item(message + Fore.GREEN + result)
+    return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum, ignore=True)
 
 def test_leakage(port):
     test_vbus(port, 0, 0.05)
@@ -335,6 +326,21 @@ def mux_select(channel):
         MUX2_A3.write(pin & 8)
         MUX2_EN.high()
 
+def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
+    message = f"Checking {qty} on {info(src)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} {unit}')}: "
+    result = f"{value:.2f} {unit}"
+    if value < minimum:
+        item(message + Fore.RED + result)
+        if not ignore:
+            raise ValueError(f"{qty} too low on {src}: {value:.2f} {unit}, minimum was {minimum:.2f} {unit}")
+    elif value > maximum:
+        item(message + Fore.RED + result)
+        if not ignore:
+            raise ValueError(f"{qty} too high on {src}: {value:.2f} {unit}, maximum was {maximum:.2f} {unit}")
+    else:
+        item(message + Fore.GREEN + result)
+    return value
+
 def test_voltage(channel, minimum, maximum):
     if maximum <= 6.6:
         V_DIV.high()
@@ -350,18 +356,7 @@ def test_voltage(channel, minimum, maximum):
     samples = gf.adc.read_samples(1000)
     voltage = scale * sum(samples) / len(samples)
 
-    message = f"Checking voltage on {info(channel)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} V')}: "
-    result = f"{voltage:.2f} V"
-
-    if voltage < minimum:
-        item(message + Fore.RED + result)
-        raise ValueError(f"Voltage too low on {channel}: {voltage:.2f} V, minimum was {minimum:.2f} V")
-    elif voltage > maximum:
-        item(message + Fore.RED + result)
-        raise ValueError(f"Voltage too high on {channel}: {voltage:.2f} V, maximum was {maximum:.2f} V")
-
-    item(message + Fore.GREEN + result)
-    return voltage
+    return test_value("voltage", channel, voltage, 'V', minimum, maximum)
 
 def set_pin(pin, level):
     required = ('input' if level is None else
