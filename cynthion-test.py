@@ -277,15 +277,21 @@ def test():
 
                 # Move host supply to another port if necessary.
                 if input_port == 'CONTROL':
+                    enable_supply_input(apollo, 'AUX', True)
                     connect_host_supply_to('CONTROL', 'AUX')
                     connect_host_supply_to('AUX')
+                    enable_supply_input(apollo, 'CONTROL', False)
                 elif input_port == 'AUX':
+                    enable_supply_input(apollo, 'CONTROL', True)
                     connect_host_supply_to('CONTROL', 'AUX')
                     connect_host_supply_to('CONTROL')
+                    enable_supply_input(apollo, 'AUX', False)
 
                 # Configure boost supply and connect.
                 set_boost_supply(voltage, current + 0.2)
-                set_passthrough(apollo, input_port, passthrough)
+                for port in ('CONTROL', 'AUX', 'TARGET-C'):
+                    set_passthrough(apollo, port,
+                        passthrough and port is input_port)
                 connect_boost_supply_to(input_port)
                 if passthrough:
                     set_pin(load_resistor, True)
