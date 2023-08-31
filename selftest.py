@@ -186,7 +186,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             i2c_bus="power_monitor",
             dev_address=0b0010000,  # PAC195X slave address when ADDRSEL tied to GND
             register_base=REGISTER_PWR_MON_ADDR,
-            data_bytes=7
+            data_bytes=2
         )
 
         # SBU control registers.
@@ -250,7 +250,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
         """ Adds a set of I2C registers to the active design. """
 
         target_i2c = platform.request(i2c_bus, dir={'sbu1': 'o', 'sbu2': 'o'})
-        i2c_if     = I2CRegisterInterface(pads=target_i2c, period_cyc=300, address=dev_address)
+        i2c_if     = I2CRegisterInterface(pads=target_i2c, period_cyc=300, address=dev_address, data_bytes=data_bytes)
         m.submodules += i2c_if
 
         register_address_change  = Signal()

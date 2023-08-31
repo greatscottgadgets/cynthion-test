@@ -3,6 +3,7 @@ from selftest import InteractiveSelftest, \
     REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
     REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
     REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
+    REGISTER_PWR_MON_ADDR, REGISTER_PWR_MON_VALUE, \
     REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
     REGISTER_AUX_SBU, REGISTER_TARGET_SBU
 from apollo_fpga import ApolloDebugger
@@ -118,6 +119,20 @@ typec_registers = {
 sbu_registers = {
     'AUX': REGISTER_AUX_SBU,
     'TARGET-C': REGISTER_TARGET_SBU
+}
+
+mon_voltage_registers = {
+    'CONTROL': 0x08,
+    'AUX': 0x07,
+    'TARGET-C': 0x0A,
+    'TARGET-A': 0x09,
+}
+
+mon_current_registers = {
+    'CONTROL': 0x0C,
+    'AUX': 0x0B,
+    'TARGET-C': 0x0E,
+    'TARGET-A': 0x0D,
 }
 
 gf = GreatFET()
@@ -502,6 +517,9 @@ def write_register(apollo, reg, value, verify=True):
                 f"Wrote 0x{value:02X} to register {reg} "
                 f"but read back 0x{readback:02X}")
 
+def read_register(apollo, reg):
+    return apollo.registers.register_read(reg)
+
 def enable_supply_input(apollo, port, enable):
     start(f"{'Enabling' if enable else 'Disabling'} supply input on {info(port)}")
     write_register(apollo, vbus_registers[port], enable)
@@ -558,11 +576,27 @@ def test_usb_fs():
 def test_vbus(input_port, vmin, vmax):
     test_voltage(vbus_channels[input_port], vmin, vmax)
 
-def test_eut_voltage(input_port, vmin, vmax):
-    todo(f"Requesting EUT voltage measurement on {info(input_port)}")
+def test_eut_voltage(apollo, port, vmin, vmax):
+    reg = mon_voltage_registers[port]
+    write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
+    sleep(0.128)
+    write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
+    value = read_register(apollo, REGISTER_PWR_MON_VALUE)
+    voltage = value * 32 / 65536
+    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
 
-def test_eut_current(input_port, imin, imax):
-    todo(f"Requesting EUT current measurement on {info(input_port)}")
+def test_eut_current(apollo, port, imin, imax):
+    reg = mon_current_registers[port]
+    write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
+    sleep(0.128)
+    write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
+    value = read_register(apollo, REGISTER_PWR_MON_VALUE)
+    voltage = value * 0.1 / 65536
+    resistance = 0.02
+    current = voltage / resistance
+    return test_value("EUT current", port, current, 'A', imin, imax, ignore=True)
 
 def request_led_check():
     todo(f"Requesting user check LEDs")

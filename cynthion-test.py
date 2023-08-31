@@ -302,13 +302,13 @@ def test():
                     # Check voltage and positive current on input port.
                     if port == input_port:
                         test_vbus(input_port, vmin_on, vmax_on)
-                        test_eut_voltage(input_port, vmin_on, vmax_on)
-                        test_eut_current(input_port, imin_on, imax_on)
+                        test_eut_voltage(apollo, input_port, vmin_on, vmax_on)
+                        test_eut_current(apollo, input_port, imin_on, imax_on)
                     # Check voltage and negative current on output port.
                     elif port == 'TARGET-A' and passthrough:
                         test_vbus(port, vmin_on, vmax_on)
-                        test_eut_voltage(port, vmin_on, vmax_on)
-                        test_eut_current(port, -imin_on, -imax_on)
+                        test_eut_voltage(apollo, port, vmin_on, vmax_on)
+                        test_eut_current(apollo, port, -imin_on, -imax_on)
                     # Exclude the host-supplied port from measurements.
                     elif (input_port, port) in (
                         ('CONTROL', 'AUX'),
@@ -319,8 +319,8 @@ def test():
                     # Check all other ports have zero leakage.
                     else:
                         test_vbus(port, vmin_off, vmax_off)
-                        test_eut_voltage(port, vmin_off, vmax_off)
-                        test_eut_current(port, imin_off, imax_off)
+                        test_eut_voltage(apollo, port, vmin_off, vmax_off)
+                        test_eut_current(apollo, port, imin_off, imax_off)
 
                 # Disconnect.
                 if passthrough:
