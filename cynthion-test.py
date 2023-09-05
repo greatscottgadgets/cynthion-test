@@ -248,13 +248,11 @@ def test():
 
     configure_power_monitor(apollo)
 
-    # VBUS distribution testing.
+    begin("Testing VBUS distribution")
     for (voltage, load_resistance, load_pin) in (
         ( 5.0,  1.72, 'TEST_5V' ),
         (14.0, 38.38, 'TEST_20V'),
     ):
-        begin(f"Testing VBUS distribution at {info(f'{voltage:.1f} V')}")
-
         # Set limits for voltage and current measurements.
         vmin_off = 0.0
         vmax_off = 0.2
@@ -287,8 +285,6 @@ def test():
             vmax_op = (vmax_ip - eut_drop) if passthrough else vmax_off
             vmin_ld = vmin_op - output_cable_drop
             vmax_ld = vmax_op - output_cable_drop
-        
-            begin(f"Testing with passthrough {'on' if passthrough else 'off'}")
 
             imin_on = current * 0.98 - 0.01
             imax_on = current * 1.02 + 0.01
@@ -303,7 +299,9 @@ def test():
             for input_port in ('CONTROL', 'AUX'):
                 supply_port = supply_ports[input_port]
 
-                begin(f"Testing with input on {info(input_port)}")
+                begin(f"Testing VBUS distribution from {info(input_port)} " +
+                      f"at {info(f'{voltage:.1f} V')} " +
+                      f"with passthrough {info('ON' if passthrough else 'OFF')}")
 
                 begin(f"Moving EUT supply to {info(supply_port)}")
                 enable_supply_input(apollo, supply_port, True)
@@ -359,10 +357,7 @@ def test():
                 end()
 
                 end()
-
-            end()
-
-        end()
+    end()
 
     # Request visual check of LEDs.
     request_led_check()
