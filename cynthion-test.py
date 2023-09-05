@@ -118,8 +118,10 @@ def test():
     configure_fpga(apollo)
 
     # Check all PHY supply voltages.
+    begin("Checking all PHY supply voltages")
     for (testpoint, minimum, maximum) in phy_supplies:
         test_voltage(testpoint, minimum, maximum)
+    end()
 
     # Run self-test routine. Should include:
     #
