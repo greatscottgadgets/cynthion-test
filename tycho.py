@@ -508,7 +508,7 @@ def connect_tester_cc_sbu_to(port):
     SIG1_OEn.low()
     SIG2_OEn.low()
 
-def write_register(apollo, reg, value, verify=True):
+def write_register(apollo, reg, value, verify=False):
     apollo.registers.register_write(reg, value)
     if verify:
         readback = apollo.registers.register_read(reg)
@@ -530,13 +530,13 @@ def set_cc_levels(apollo, port, levels):
     value = 0b01 * levels[0] | 0b10 * levels[1]
     reg_addr, reg_val = typec_registers[port]
     write_register(apollo, reg_addr, (0x02 << 8) | 1)
-    write_register(apollo, reg_val, value, verify=False)
+    write_register(apollo, reg_val, value)
     done()
 
 def set_sbu_levels(apollo, port, levels):
     start(f"Setting SBU levels on {info(port)} to {info(levels)}")
     value = 0b01 * levels[0] | 0b10 * levels[1]
-    write_register(apollo, sbu_registers[port], value, verify=False)
+    write_register(apollo, sbu_registers[port], value)
     done()
 
 def connect_host_supply_to(*ports):
@@ -579,14 +579,14 @@ def test_vbus(input_port, vmin, vmax):
 def configure_power_monitor(apollo):
     start("Configuring I2C power monitor")
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1D << 8) | 2)
-    write_register(apollo, REGISTER_PWR_MON_VALUE, 0x5500, verify=False)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0x5500)
     done()
 
 def test_eut_voltage(apollo, port, vmin, vmax):
     reg = mon_voltage_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
     sleep(0.01)
-    write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
     sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     sleep(0.01)
@@ -598,7 +598,7 @@ def test_eut_current(apollo, port, imin, imax):
     reg = mon_current_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
     sleep(0.01)
-    write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
     sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     sleep(0.01)
