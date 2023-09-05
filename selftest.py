@@ -109,7 +109,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
         registers.add_read_only_register(REGISTER_ID, read=0x54455354)
 
         # LED test register.
-        led_reg = registers.add_register(REGISTER_LEDS, size=6, name="leds", reset=0b111111)
+        led_reg = registers.add_register(REGISTER_LEDS, size=6, name="leds", reset=0)
         led_out   = Cat([platform.request("led", i, dir="o") for i in range(0, 6)])
         m.d.comb += led_out.eq(led_reg)
 

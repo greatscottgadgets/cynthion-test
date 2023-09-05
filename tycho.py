@@ -186,6 +186,11 @@ def start(text):
 def done():
     print(Fore.GREEN + "OK" + Style.RESET_ALL)
 
+def request(text):
+    print(Fore.BLUE)
+    print(" === Please " + text + " and press ENTER === " + Style.RESET_ALL)
+    input()
+
 def fail():
     print(Fore.RED + "FAIL" + Style.RESET_ALL)
 
@@ -614,9 +619,6 @@ def test_eut_current(apollo, port, imin, imax):
     resistance = 0.02
     current = voltage / resistance
     return test_value("EUT current", port, current, 'A', imin, imax)
-
-def request_led_check():
-    todo(f"Requesting user check LEDs")
 
 def request_apollo_reset():
     todo(f"Requesting Apollo reset the EUT")

@@ -133,12 +133,6 @@ def test():
     # 
     run_self_test(apollo)
 
-    # Test debug LEDs.
-    test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
-
-    # Test FPGA LEDs.
-    test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
-
     begin("Testing FPGA control of VBUS input selection")
 
     begin("Handing off EUT supply from boost converter to host")
@@ -225,10 +219,6 @@ def test():
         end()
     todo("Check FPGA control of TARGET-C CC and SBU lines")
     end()
-
-    # Turn on all LEDs for visual check.
-    set_debug_leds(apollo, 0b11111)
-    set_fpga_leds(apollo, 0b111111)
 
     todo("Test USB HS comms on each port")
     #for port in ('CONTROL', 'AUX', 'TARGET-C'):
@@ -361,8 +351,19 @@ def test():
                 end()
     end()
 
-    # Request visual check of LEDs.
-    request_led_check()
+    begin("Testing LEDs")
+    test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
+    test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
+    begin("Checking visual appearance of LEDs")
+    set_debug_leds(apollo, 0b11111)
+    set_fpga_leds(apollo, 0b111111)
+    set_pin('REF_LED_EN', True)
+    request("check LEDs match reference")
+    set_pin('REF_LED_EN', False)
+    set_debug_leds(apollo, 0)
+    set_fpga_leds(apollo, 0)
+    end()
+    end()
 
     # Request press of USER button, should be detected by FPGA.
     request_button('USER')
