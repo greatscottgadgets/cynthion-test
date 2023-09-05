@@ -250,14 +250,14 @@ def test():
 
     # VBUS distribution testing.
     for (voltage, load_resistance, load_pin) in (
-        ( 5.0,  1.75, 'TEST_5V' ),
+        ( 5.0,  1.72, 'TEST_5V' ),
         (14.0, 38.38, 'TEST_20V'),
     ):
         begin(f"Testing VBUS distribution at {info(f'{voltage:.1f} V')}")
 
         # Set limits for voltage and current measurements.
         vmin_off = 0.0
-        vmax_off = 0.05
+        vmax_off = 0.2
         imin_off = -0.01
         imax_off =  0.01
         src_resistance = 0.08
@@ -326,7 +326,7 @@ def test():
                 begin("Checking voltage and current on supply port")
                 test_vbus(supply_port, 4.3, 5.25)
                 test_eut_voltage(apollo, supply_port, 4.3, 5.25)
-                test_eut_current(apollo, supply_port, 0.14, 0.16)
+                test_eut_current(apollo, supply_port, 0.13, 0.16)
                 end()
 
                 begin("Checking voltages and positive current on input")

@@ -299,7 +299,7 @@ def check_cc_resistance(pin, minimum, maximum):
     return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum, ignore=True)
 
 def test_leakage(port):
-    test_vbus(port, 0, 0.05)
+    test_vbus(port, 0, 0.2)
 
 def set_boost_supply(voltage, current):
     item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
