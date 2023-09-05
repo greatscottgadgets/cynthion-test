@@ -165,8 +165,8 @@ def reset():
         else:
             pin.low()
 
-def msg(text, end):
-    print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end)
+def msg(text, end, flush=False):
+    print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
 
 def item(text):
     msg(text, "\n")
@@ -181,7 +181,7 @@ def end():
     indent -= 1
 
 def start(text):
-    msg(text, "... ")
+    msg(text, "... ", flush=True)
 
 def done():
     print(Fore.GREEN + "OK" + Style.RESET_ALL)
