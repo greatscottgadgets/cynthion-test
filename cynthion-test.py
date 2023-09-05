@@ -246,87 +246,117 @@ def test():
     # #connect_host_to('TARGET-C')
     # #test_usb_fs()
 
+    configure_power_monitor(apollo)
+
     # VBUS distribution testing.
-    for (voltage, load_current, load_resistor) in (
-        ( 5.0, 3.0, 'TEST_5V'),
-        #(20.0, 0.5, 'TEST_20V'),
+    for (voltage, load_resistance, load_pin) in (
+        ( 5.0,  1.75, 'TEST_5V' ),
+        (14.0, 38.38, 'TEST_20V'),
     ):
-        begin(f"Testing VBUS distribution at {info(f'{voltage:.1f} V {load_current:.1f} A')}")
+        begin(f"Testing VBUS distribution at {info(f'{voltage:.1f} V')}")
 
         # Set limits for voltage and current measurements.
         vmin_off = 0.0
         vmax_off = 0.05
         imin_off = -0.01
         imax_off =  0.01
-        vmin_on  = voltage * 0.98 - 0.01
-        vmax_on  = voltage * 1.02 + 0.01
+        src_resistance = 0.08
+        input_cable_resistance = 0.07
+        eut_resistance = 0.12
+        output_cable_resistance = 0.07
 
         # Test with passthrough off, and then with passthrough to load.
         for passthrough in (False, True):
-            current = load_current * passthrough
+            if passthrough:
+                total_resistance = sum([
+                    src_resistance, input_cable_resistance, eut_resistance,
+                    output_cable_resistance, load_resistance])
+                current = voltage / total_resistance
+            else:
+                current = 0
+
+            src_drop = src_resistance * current
+            input_cable_drop = input_cable_resistance * current
+            eut_drop = eut_resistance * current
+            output_cable_drop = output_cable_resistance * current
+            vmin_sp = voltage * 0.98 - 0.01 - src_drop
+            vmax_sp = voltage * 1.02 + 0.01 - src_drop
+            vmin_ip = vmin_sp - input_cable_drop
+            vmax_ip = vmax_sp - input_cable_drop
+            vmin_op = (vmin_ip - eut_drop) if passthrough else vmin_off
+            vmax_op = (vmax_ip - eut_drop) if passthrough else vmax_off
+            vmin_ld = vmin_op - output_cable_drop
+            vmax_ld = vmax_op - output_cable_drop
         
             begin(f"Testing with passthrough {'on' if passthrough else 'off'}")
 
             imin_on = current * 0.98 - 0.01
             imax_on = current * 1.02 + 0.01
 
+            supply_ports = {
+                'CONTROL': 'AUX',
+                'AUX': 'CONTROL',
+                'TARGET-C': 'CONTROL',
+            }
+
             # Supply through each input port.
             for input_port in ('CONTROL', 'AUX'):
+                supply_port = supply_ports[input_port]
 
                 begin(f"Testing with input on {info(input_port)}")
 
-                # Move host supply to another port if necessary.
-                if input_port == 'CONTROL':
-                    enable_supply_input(apollo, 'AUX', True)
-                    connect_host_supply_to('CONTROL', 'AUX')
-                    connect_host_supply_to('AUX')
-                    enable_supply_input(apollo, 'CONTROL', False)
-                elif input_port == 'AUX':
-                    enable_supply_input(apollo, 'CONTROL', True)
-                    connect_host_supply_to('CONTROL', 'AUX')
-                    connect_host_supply_to('CONTROL')
-                    enable_supply_input(apollo, 'AUX', False)
+                begin(f"Moving EUT supply to {info(supply_port)}")
+                enable_supply_input(apollo, supply_port, True)
+                connect_host_supply_to('CONTROL', 'AUX')
+                connect_host_supply_to(supply_port)
+                enable_supply_input(apollo, input_port, False)
+                end()
 
                 # Configure boost supply and connect.
-                set_boost_supply(voltage, current + 0.2)
+                begin(f"Setting up test conditions")
+                set_boost_supply(voltage, current + 0.3)
                 for port in ('CONTROL', 'AUX', 'TARGET-C'):
                     set_passthrough(apollo, port,
                         passthrough and port is input_port)
                 connect_boost_supply_to(input_port)
                 if passthrough:
-                    set_pin(load_resistor, True)
+                    set_pin(load_pin, True)
+                end()
 
-                # Check voltage and current on each port.
-                for port in ('CONTROL', 'AUX', 'TARGET-A', 'TARGET-C'):
+                begin("Checking voltage and current on supply port")
+                test_vbus(supply_port, 4.3, 5.25)
+                test_eut_voltage(apollo, supply_port, 4.3, 5.25)
+                test_eut_current(apollo, supply_port, 0.14, 0.16)
+                end()
 
-                    # Check voltage and positive current on input port.
-                    if port == input_port:
-                        test_vbus(input_port, vmin_on, vmax_on)
-                        test_eut_voltage(apollo, input_port, vmin_on, vmax_on)
-                        test_eut_current(apollo, input_port, imin_on, imax_on)
-                    # Check voltage and negative current on output port.
-                    elif port == 'TARGET-A' and passthrough:
-                        test_vbus(port, vmin_on, vmax_on)
-                        test_eut_voltage(apollo, port, vmin_on, vmax_on)
-                        test_eut_current(apollo, port, -imin_on, -imax_on)
-                    # Exclude the host-supplied port from measurements.
-                    elif (input_port, port) in (
-                        ('CONTROL', 'AUX'),
-                        ('AUX', 'CONTROL'),
-                        ('TARGET-C', 'CONTROL'),
-                        ):
+                begin("Checking voltages and positive current on input")
+                test_vbus(input_port, vmin_sp, vmax_sp)
+                test_eut_voltage(apollo, input_port, vmin_ip, vmax_ip)
+                test_eut_current(apollo, input_port, imin_on, imax_on)
+                end()
+
+                begin("Checking voltages and negative current on output")
+                test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
+                test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op)
+                test_eut_current(apollo, 'TARGET-A', -imax_on, -imin_on)
+                test_voltage('VBUS_TA', vmin_ld, vmax_ld)
+                end()
+
+                begin("Checking for leakage on other ports")
+                for port in ('CONTROL', 'AUX', 'TARGET-C'):
+                    if port in (input_port, supply_port):
                         continue
-                    # Check all other ports have zero leakage.
-                    else:
-                        test_vbus(port, vmin_off, vmax_off)
-                        test_eut_voltage(apollo, port, vmin_off, vmax_off)
-                        test_eut_current(apollo, port, imin_off, imax_off)
+                    test_vbus(port, vmin_off, vmax_off)
+                    test_eut_voltage(apollo, port, vmin_off, vmax_off)
+                    test_eut_current(apollo, port, imin_off, imax_off)
+                end()
 
-                # Disconnect.
+                begin("Shutting down test")
                 if passthrough:
-                    set_pin(load_resistor, False)
+                    set_pin(load_pin, False)
                     set_passthrough(apollo, input_port, False)
                 connect_boost_supply_to(None)
+                end()
 
                 end()
 

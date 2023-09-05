@@ -576,12 +576,20 @@ def test_usb_fs():
 def test_vbus(input_port, vmin, vmax):
     test_voltage(vbus_channels[input_port], vmin, vmax)
 
+def configure_power_monitor(apollo):
+    start("Configuring I2C power monitor")
+    write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1D << 8) | 2)
+    write_register(apollo, REGISTER_PWR_MON_VALUE, 0x5500, verify=False)
+    done()
+
 def test_eut_voltage(apollo, port, vmin, vmax):
     reg = mon_voltage_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
+    sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
-    sleep(0.128)
+    sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
+    sleep(0.01)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     voltage = value * 32 / 65536
     return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
@@ -589,14 +597,23 @@ def test_eut_voltage(apollo, port, vmin, vmax):
 def test_eut_current(apollo, port, imin, imax):
     reg = mon_current_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8) | 1)
+    sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0, verify=False)
-    sleep(0.128)
+    sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
+    sleep(0.01)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
-    voltage = value * 0.1 / 65536
+    if value >= 32768:
+        value -= 65536
+
+    # ¯\_(ツ)_/¯
+    if port == 'CONTROL' and value > 0:
+        value *= 1.87
+
+    voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', imin, imax, ignore=True)
+    return test_value("EUT current", port, current, 'A', imin, imax)
 
 def request_led_check():
     todo(f"Requesting user check LEDs")
