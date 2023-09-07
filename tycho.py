@@ -620,9 +620,6 @@ def test_eut_current(apollo, port, imin, imax):
 def request_apollo_reset():
     todo(f"Requesting Apollo reset the EUT")
 
-def request_button(button):
-    todo(f"Requesting user press the {info(button)} button")
-
 def test_user_button(apollo):
     button = f"{info('USER')} button"
     begin(f"Testing {button}")

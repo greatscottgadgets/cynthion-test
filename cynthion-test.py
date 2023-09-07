@@ -377,11 +377,11 @@ def test():
     test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
-    request_button('PROGRAM')
+    request('press the PROGRAM button')
     test_apollo_present()
 
     # Request press of RESET button, should cause analyzer to enumerate.
-    request_button('RESET')
+    request('press the RESET button')
     test_analyzer_present()
 
     begin("Powering off EUT")
