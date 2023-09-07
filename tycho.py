@@ -587,21 +587,22 @@ def configure_power_monitor(apollo):
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0x5500)
     done()
 
-def test_eut_voltage(apollo, port, vmin, vmax):
-    reg = mon_voltage_registers[port]
+def refresh_power_monitor(apollo):
     write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8))
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
     sleep(0.01)
+
+def test_eut_voltage(apollo, port, vmin, vmax):
+    refresh_power_monitor(apollo)
+    reg = mon_voltage_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     voltage = value * 32 / 65536
     return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
 
 def test_eut_current(apollo, port, imin, imax):
+    refresh_power_monitor(apollo)
     reg = mon_current_registers[port]
-    write_register(apollo, REGISTER_PWR_MON_ADDR, (0x1F << 8))
-    write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
-    sleep(0.01)
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     if value >= 32768:
