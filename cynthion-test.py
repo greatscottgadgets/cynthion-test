@@ -366,8 +366,7 @@ def test():
     end()
 
     # Request press of USER button, should be detected by FPGA.
-    request_button('USER')
-    test_user_button_pressed()
+    test_user_button(apollo)
 
     # Tell the FPGA to hand off the control port to the MCU.
     request_control_handoff()

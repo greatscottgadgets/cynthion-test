@@ -5,7 +5,7 @@ from selftest import InteractiveSelftest, \
     REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
     REGISTER_PWR_MON_ADDR, REGISTER_PWR_MON_VALUE, \
     REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
-    REGISTER_AUX_SBU, REGISTER_TARGET_SBU
+    REGISTER_AUX_SBU, REGISTER_TARGET_SBU, REGISTER_BUTTON_USER
 from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
@@ -623,8 +623,20 @@ def request_apollo_reset():
 def request_button(button):
     todo(f"Requesting user press the {info(button)} button")
 
-def test_user_button_pressed():
-    todo(f"Checking that the {info('USER')} button was pressed")
+def test_user_button(apollo):
+    button = f"{info('USER')} button"
+    begin(f"Testing {button}")
+    start(f"Checking {button} is released")
+    write_register(apollo, REGISTER_BUTTON_USER, 0)
+    if read_register(apollo, REGISTER_BUTTON_USER):
+        raise ValueError(f"USER button press detected unexpectedly")
+    done()
+    request("press the USER button")
+    start(f"Checking {button} was pressed")
+    if not read_register(apollo, REGISTER_BUTTON_USER):
+        raise ValueError(f"USER button press not detected")
+    done()
+    end()
 
 def request_control_handoff():
     pass

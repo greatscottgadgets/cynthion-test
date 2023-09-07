@@ -69,6 +69,8 @@ REGISTER_PASS_TARGET_C = 30
 REGISTER_AUX_SBU = 31
 REGISTER_TARGET_SBU = 32
 
+REGISTER_BUTTON_USER = 33
+
 
 class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
     """ Hardware meant to demonstrate use of the Debug Controller's register interface.
@@ -196,6 +198,20 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             Cat([aux_type_c.sbu2, aux_type_c.sbu1]).eq(aux_sbu_reg),
             Cat([target_type_c.sbu2, target_type_c.sbu1]).eq(target_sbu_reg),
         ]
+
+        # User button register.
+        button_input = platform.request("button_user")
+        button_pressed = Signal()
+        button_reset = Signal()
+        registers.add_sfr(
+            REGISTER_BUTTON_USER,
+            read=button_pressed,
+            write_strobe=button_reset,
+            write_signal=Signal())
+        with m.If(button_reset):
+            m.d.usb += button_pressed.eq(False)
+        with m.Elif(button_input):
+            m.d.usb += button_pressed.eq(True)
 
         return m
 
