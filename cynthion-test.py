@@ -251,7 +251,7 @@ def test():
         imin_off = -0.01
         imax_off =  0.01
         src_resistance = 0.08
-        input_cable_resistance = 0.07
+        input_cable_resistance = 0.05
         eut_resistance = 0.12
         output_cable_resistance = 0.07
 

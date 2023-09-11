@@ -211,19 +211,19 @@ def check_for_shorts(port):
 
     begin_short_check('VBUS', 'GND', port)
     set_pin('GND_EUT', True)
-    test_vbus(port, 2.0, 2.9)
+    test_vbus(port, 0, 0.05)
     set_pin('GND_EUT', None)
     end()
 
     begin_short_check('VBUS', 'SBU2', port)
     set_pin('SBU2_test', True)
-    test_vbus(port, 0.0, 1.2)
+    test_vbus(port, 0.0, 0.05)
     set_pin('SBU2_test', None)
     end()
 
     begin_short_check('SBU2', 'CC1', port)
     set_pin('SBU2_test', True)
-    test_voltage('CC1_test', 0.0, 1.2)
+    test_voltage('CC1_test', 0.0, 0.05)
     set_pin('SBU2_test', None)
     end()
 
