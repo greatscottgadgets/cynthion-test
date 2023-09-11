@@ -418,25 +418,6 @@ def test():
 
     # end()
 
-# Helper functions for testing.
-
-def test_leds(apollo, group, leds, set_leds, off_min, off_max):
-    begin(f"Testing {group} LEDs")
-    for i in range(len(leds)):
-        begin(f"Testing {group} LED {info(i)}")
-        # Turn on LED
-        set_leds(apollo, 1 << i)
-
-        # Check that this and only this LED is on, with the correct voltage.
-        for j, (testpoint, minimum, maximum) in enumerate(leds):
-            if i == j:
-                test_voltage(testpoint, minimum, maximum)
-            else:
-                test_voltage(testpoint, off_min, off_max)
-        end()
-
-    end()
-
 # Static data required for tests.
 
 supplies = (
