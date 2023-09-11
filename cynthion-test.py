@@ -5,9 +5,8 @@ import numpy as np
 def test():
     # First check for shorts at each EUT USB-C port.
     begin("Checking for shorts on all USB-C ports")
-    for port in ('CONTROL', 'AUX'):
+    for port in ('CONTROL', 'AUX', 'TARGET-C'):
         check_for_shorts(port)
-    todo(f"Checking for shorts on {info('TARGET-C')}")
     end()
 
     # Connect EUT GND to tester GND.
@@ -15,9 +14,8 @@ def test():
 
     # Check CC resistances with EUT unpowered.
     begin("Checking CC resistances with EUT unpowered")
-    for port in ('CONTROL', 'AUX'):
+    for port in ('CONTROL', 'AUX', 'TARGET-C'):
         check_cc_resistances(port)
-    todo(f"Checking CC resistances on {info('TARGET-C')}")
     end()
 
     # Test supplying VBUS through CONTROL and AUX ports.
@@ -67,12 +65,12 @@ def test():
         disconnect_supply_and_discharge(supply_port)
         end()
 
-    todo("Testing passthrough at low current with power off")
-    # set_boost_supply(5.0, 0.2)
-    # connect_boost_supply_to('TARGET-C')
-    # test_voltage('TARGET_A_VBUS', 4.85, 5.05)
-    # disconnect_supply_and_discharge('TARGET-C')
-    # end()
+    begin("Testing passthrough at low current with power off")
+    set_boost_supply(5.0, 0.2)
+    connect_boost_supply_to('TARGET-C')
+    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+    disconnect_supply_and_discharge('TARGET-C')
+    end()
 
     begin("Powering EUT for testing")
     set_boost_supply(5.0, 0.2)
@@ -85,8 +83,8 @@ def test():
     end()
 
     begin("Checking CC resistances with EUT powered")
-    check_cc_resistances('AUX')
-    todo(f"Checking CC resistances on {info('TARGET-C')}")
+    for port in ('AUX', 'TARGET-C'):
+        check_cc_resistances(port)
     end()
 
     # Check 60MHz clock.
@@ -199,7 +197,7 @@ def test():
     end()
 
     begin("Checking FPGA control of CC and SBU lines")
-    for port in ('AUX',):
+    for port in ('AUX', 'TARGET-C'):
         begin(f"Checking control of {info(port)} CC lines")
         begin_cc_measurement(port)
         for levels in ((0, 1), (1, 0)):
@@ -217,7 +215,6 @@ def test():
             test_pin('SBU1_test', levels[0])
             test_pin('SBU2_test', levels[1])
         end()
-    todo("Check FPGA control of TARGET-C CC and SBU lines")
     end()
 
     todo("Test USB HS comms on each port")
