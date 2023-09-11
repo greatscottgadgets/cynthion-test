@@ -103,8 +103,20 @@ def test():
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
 
+    sleep(0.1)
+
+    begin(f"Simulating pressing the {info('PROGRAM')} button")
+    set_pin('nBTN_PROGRAM', False)
+    sleep(0.1)
+    set_pin('nBTN_PROGRAM', None)
+    end()
+
+    sleep(0.7)
+
     # Connect to the Apollo debug interface.
+    start("Connecting to Apollo")
     apollo = ApolloDebugger()
+    done()
 
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan(apollo)
