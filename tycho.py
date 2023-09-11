@@ -56,6 +56,8 @@ gpio_allocations = dict(
     SIG2_OEn = ('J2_P22', 1),
     SIG1_S = ('J2_P23', 0),
     SIG2_S = ('J2_P27', 0),
+    nBTN_PROGRAM = ('J1_P27', None),
+    nBTN_RESET = ('J1_P29', None),
 )
 
 mux_channels = {
