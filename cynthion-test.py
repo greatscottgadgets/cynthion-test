@@ -320,9 +320,9 @@ fpga_leds = (
 
 debug_leds = ( # Values are 3.3V - Vf
     ('D10_Vf', 2.4, 2.6), # MHT192WDT-ICE, Ice Blue
-    ('D11_Vf', 2.5, 2.7), # OSK40603C1E, Pink
+    ('D11_Vf', 2.4, 2.7), # OSK40603C1E, Pink
     ('D12_Vf', 2.5, 2.7), # ORH-W46G, White
-    ('D13_Vf', 2.5, 2.7), # OSK40603C1E, Pink
+    ('D13_Vf', 2.4, 2.7), # OSK40603C1E, Pink
     ('D14_Vf', 2.4, 2.6)) # MHT192WDT-ICE, Ice Blue
 
 if __name__ == "__main__":
