@@ -676,55 +676,70 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
           f"at {info(f'{voltage:.1f} V')} " +
           f"with passthrough {info('ON' if passthrough else 'OFF')}")
 
-    begin(f"Moving EUT supply to {info(supply_port)}")
-    enable_supply_input(apollo, supply_port, True)
-    connect_host_supply_to('CONTROL', 'AUX')
-    connect_host_supply_to(supply_port)
-    enable_supply_input(apollo, input_port, False)
-    end()
+    if apollo:
+        begin(f"Moving EUT supply to {info(supply_port)}")
+        enable_supply_input(apollo, supply_port, True)
+        connect_host_supply_to('CONTROL', 'AUX')
+        connect_host_supply_to(supply_port)
+        enable_supply_input(apollo, input_port, False)
+        end()
 
     begin(f"Setting up test conditions")
     set_boost_supply(voltage, current + 0.3)
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        set_passthrough(apollo, port,
-            passthrough and port is input_port)
+    if apollo:
+        for port in ('CONTROL', 'AUX', 'TARGET-C'):
+            set_passthrough(apollo, port,
+                passthrough and port is input_port)
     connect_boost_supply_to(input_port)
     if passthrough:
         set_pin(load_pin, True)
     end()
 
-    begin("Checking voltage and current on supply port")
-    test_vbus(supply_port, 4.3, 5.25)
-    test_eut_voltage(apollo, supply_port, 4.3, 5.25)
-    test_eut_current(apollo, supply_port, 0.13, 0.16)
-    end()
+    sleep(0.1)
 
-    begin("Checking voltages and positive current on input")
-    test_vbus(input_port, vmin_sp, vmax_sp)
-    test_eut_voltage(apollo, input_port, vmin_ip, vmax_ip)
-    test_eut_current(apollo, input_port, imin_on, imax_on)
-    end()
+    if apollo:
+        begin("Checking voltage and current on supply port")
+        test_vbus(supply_port, 4.3, 5.25)
+        test_eut_voltage(apollo, supply_port, 4.3, 5.25)
+        test_eut_current(apollo, supply_port, 0.13, 0.16)
+        end()
 
-    begin("Checking voltages and negative current on output")
-    test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
-    test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op)
-    test_eut_current(apollo, 'TARGET-A', -imax_on, -imin_on)
-    test_voltage('VBUS_TA', vmin_ld, vmax_ld)
-    end()
+        begin("Checking voltages and positive current on input")
+        test_vbus(input_port, vmin_sp, vmax_sp)
+        test_eut_voltage(apollo, input_port, vmin_ip, vmax_ip)
+        test_eut_current(apollo, input_port, imin_on, imax_on)
+        end()
+
+        begin("Checking voltages and negative current on output")
+        test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
+        test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op)
+        test_eut_current(apollo, 'TARGET-A', -imax_on, -imin_on)
+        test_voltage('VBUS_TA', vmin_ld, vmax_ld)
+        end()
+    else:
+        begin("Checking voltages")
+        test_vbus(input_port, vmin_sp, vmax_sp)
+        test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
+        test_voltage('VBUS_TA', vmin_ld, vmax_ld)
+        end()
 
     begin("Checking for leakage on other ports")
     for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        if port in (input_port, supply_port):
+        if port == input_port:
+            continue
+        if apollo and port == supply_port:
             continue
         test_vbus(port, vmin_off, vmax_off)
-        test_eut_voltage(apollo, port, vmin_off, vmax_off)
-        test_eut_current(apollo, port, imin_off, imax_off)
+        if apollo:
+            test_eut_voltage(apollo, port, vmin_off, vmax_off)
+            test_eut_current(apollo, port, imin_off, imax_off)
     end()
 
     begin("Shutting down test")
     if passthrough:
         set_pin(load_pin, False)
-        set_passthrough(apollo, input_port, False)
+        if apollo:
+            set_passthrough(apollo, input_port, False)
     connect_boost_supply_to(None)
     end()
 

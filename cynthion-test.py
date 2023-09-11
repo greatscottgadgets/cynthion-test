@@ -286,37 +286,13 @@ def test():
     connect_host_supply_to(None)
     end()
 
-    todo(f"Testing VBUS distribution with EUT off")
-    # for (voltage, current, load_resistor) in (
-    #     ( 5.0, 3.0, 'TEST_5V'),
-    #     (20.0, 0.5, 'TEST_20V'),
-    # ):
-    #     begin(f"Testing at {info(f'{voltage:.1f} V {load_current:.1f} A')}")
-
-    #     # Set limits for voltage and current measurements.
-    #     vmin = voltage * 0.98 - 0.01
-    #     vmax = voltage * 1.02 + 0.01
-    #     imin = current * 0.98 - 0.01
-    #     imax = current * 1.02 + 0.01
-
-    #     # Configure boost supply and connect.
-    #     set_boost_supply(voltage, current + 0.2)
-    #     connect_boost_supply_to('TARGET-C')
-
-    #     # Check voltage on input and output ports.
-    #     test_vbus('TARGET-C', vmin_on, vmax_on)
-    #     test_vbus('TARGET-A', vmin_on, vmax_on)
-
-    #     # Check all other ports have zero leakage.
-    #     for port in ('CONTROL', 'AUX'):
-    #         test_leakage(port)
-
-    #     # Disconnect.
-    #     connect_boost_supply_to(None)
-
-    #     end()
-
-    # end()
+    begin(f"Testing VBUS distribution with EUT off")
+    for (voltage, load_resistance, load_pin) in (
+            ( 5.0,  1.72, 'TEST_5V' ),
+            (14.0, 38.38, 'TEST_20V')):
+        test_vbus_distribution(
+            None, voltage, load_resistance, load_pin, True, 'TARGET-C')
+    end()
 
 # Static data required for tests.
 
