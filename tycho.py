@@ -235,21 +235,17 @@ def check_for_shorts(port):
 
     todo("D+/SBU1 short check")
 
-    todo("SBU1/CC2 short check")
+    begin_short_check('SBU1', 'CC2', port)
+    set_pin('SBU1_test', True)
+    test_voltage('CC2_test', 0.0, 0.05)
+    set_pin('SBU1_test', None)
+    end()
 
-    todo("CC2/VBUS short check")
-
-    # begin_short_check('SBU1', 'CC2', port)
-    # set_pin('SBU1_test', True)
-    # test_voltage('CC2_test', 0.0, 1.2)
-    # set_pin('SBU1_test', None)
-    # end()
-
-    # begin_short_check('CC2', 'VBUS', port)
-    # set_pin('CC2_test', True)
-    # test_vbus(port, 0.0, 1.2)
-    # set_pin('CC2_test', None)
-    # end()
+    begin_short_check('CC2', 'VBUS', port)
+    set_pin('CC2_test', True)
+    test_vbus(port, 0.0, 0.05)
+    set_pin('CC2_test', None)
+    end()
 
     end()
 
@@ -294,9 +290,6 @@ def check_cc_resistances(port):
     end()
 
 def check_cc_resistance(pin, minimum, maximum):
-    if pin == 'CC2':
-        todo(f"Checking resistance on {info(pin)}")
-        return
     channel = f'{pin}_test'
     mux_select(channel)
     samples = gf.adc.read_samples(1000)
