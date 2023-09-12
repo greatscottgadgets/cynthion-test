@@ -884,8 +884,11 @@ def test_user_button(apollo):
     done()
     end()
 
-def request_control_handoff():
-    pass
+def request_control_handoff(handle):
+    start(f"Requesting FPGA handoff {info('CONTROL')} port to MCU")
+    handle.controlWrite(
+        usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)
+    done()
 
 def test_analyzer_present():
     todo(f"Checking for analyzer")
