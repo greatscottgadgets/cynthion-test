@@ -232,11 +232,6 @@ def test():
         end()
     end()
 
-    todo("Test USB HS comms on each port")
-    #for port in ('CONTROL', 'AUX', 'TARGET-C'):
-    #    connect_host_to(port)
-    #    test_usb_hs(port)
-
     # Request the operator connect a cable to Target-A.
     # request_target_a_cable()
 
@@ -280,8 +275,18 @@ def test():
     # Request press of USER button, should be detected by FPGA.
     test_user_button(apollo)
 
+    # Run HS speed test.
+    begin("Testing USB HS comms on all ports")
+    configure_fpga(apollo, 'speedtest.bit')
+    for port in ('CONTROL',):
+        handle = test_usb_hs(port)
+    for port in ('AUX', 'TARGET-C'):
+        todo(f"Testing USB HS comms on {info(port)}")
+    end()
+
     # Tell the FPGA to hand off the control port to the MCU.
-    request_control_handoff()
+    # request_control_handoff()
+    simulate_program_button()
     test_apollo_present()
 
     # Request Apollo reset, should cause analyzer to enumerate.

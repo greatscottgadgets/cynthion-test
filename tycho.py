@@ -9,7 +9,7 @@ from selftest import InteractiveSelftest, \
 from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
-from time import sleep
+from time import time, sleep
 import colorama
 import inspect
 import usb1
@@ -538,7 +538,102 @@ def run_self_test(apollo):
     end()
 
 def test_usb_hs(port):
-    todo(f"Testing USB HS comms on {info(port)}")
+    begin(f"Testing USB HS comms on {info(port)}")
+    connect_host_to(port)
+    sleep(0.8)
+
+    pids = {'CONTROL': 0x0001, 'AUX': 0x0002, 'TARGET-C': 0x0003}
+
+    BULK_ENDPOINT_NUMBER = 1
+    TEST_DATA_SIZE = 1 * 1024 * 1024
+    TEST_TRANSFER_SIZE = 16 * 1024
+    TRANSFER_QUEUE_DEPTH = 16
+
+    total_data_exchanged = 0
+    failed_out = False
+
+    messages = {
+        1: "error'd out",
+        2: "timed out",
+        3: "was prematurely cancelled",
+        4: "was stalled",
+        5: "lost the device it was connected to",
+        6: "sent more data than expected."
+    }
+
+    def should_terminate():
+        return (total_data_exchanged > TEST_DATA_SIZE) or failed_out
+
+    def transfer_completed(transfer: usb1.USBTransfer):
+        nonlocal total_data_exchanged, failed_out
+
+        status = transfer.getStatus()
+
+        # If the transfer completed.
+        if status in (usb1.TRANSFER_COMPLETED,):
+
+            # Count the data exchanged in this packet...
+            total_data_exchanged += transfer.getActualLength()
+
+            # ... and if we should terminate, abort.
+            if should_terminate():
+                return
+
+            # Otherwise, re-submit the transfer.
+            transfer.submit()
+
+        else:
+            failed_out = status
+
+    # Grab a reference to our device...
+    handle = find_device(0x1209, pids[port]).open()
+
+    # ... and claim its bulk interface.
+    handle.claimInterface(0)
+
+    # Submit a set of transfers to perform async comms with.
+    active_transfers = []
+    for _ in range(TRANSFER_QUEUE_DEPTH):
+
+        # Allocate the transfer...
+        transfer = handle.getTransfer()
+        transfer.setBulk(0x80 | BULK_ENDPOINT_NUMBER, TEST_TRANSFER_SIZE, callback=transfer_completed, timeout=1000)
+
+        # ... and store it.
+        active_transfers.append(transfer)
+
+    # Start our benchmark timer.
+    start_time = time()
+
+    # Submit our transfers all at once.
+    for transfer in active_transfers:
+        transfer.submit()
+
+    # Run our transfers until we get enough data.
+    while not should_terminate():
+        context.handleEvents()
+
+    # Figure out how long this took us.
+    end_time = time()
+    elapsed = end_time - start_time
+
+    # Cancel all of our active transfers.
+    for transfer in active_transfers:
+        if transfer.isSubmitted():
+            transfer.cancel()
+
+    # If we failed out; indicate it.
+    if failed_out:
+        raise RuntimeError(
+            f"Test failed because a transfer {messages[failed_out]}.")
+
+    speed = total_data_exchanged / elapsed / 1000000
+
+    test_value("transfer rate", port, speed, 'MB/s', 45, 50)
+
+    end()
+
+    return handle
 
 def connect_tester_cc_sbu_to(port):
     item(f"Connecting tester CC/SBU lines to {info(port)}")
