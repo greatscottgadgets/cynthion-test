@@ -458,6 +458,13 @@ def simulate_program_button():
     set_pin('nBTN_PROGRAM', None)
     end()
 
+def simulate_reset_button():
+    begin(f"Simulating pressing the {info('RESET')} button")
+    set_pin('nBTN_RESET', False)
+    sleep(0.1)
+    set_pin('nBTN_RESET', None)
+    end()
+
 def set_debug_leds(apollo, bitmask):
     start(f"Setting debug LEDs to 0b{bitmask:05b}")
     apollo.set_led_pattern(bitmask)
@@ -488,32 +495,66 @@ def test_leds(apollo, group, leds, set_leds, off_min, off_max):
 
 def test_jtag_scan(apollo):
     begin("Checking JTAG scan chain")
-    apollo.jtag.initialize()
-    devices = [(device.idcode(), device.description())
-        for device in apollo.jtag.enumerate()]
+    with apollo.jtag as jtag:
+        devices = [(device.idcode(), device.description())
+            for device in jtag.enumerate()]
     for idcode, desc in devices:
         item(f"Found {info(f'0x{idcode:8X}')}: {info(desc)}")
     if devices != [(0x41111043, "Lattice LFE5U-25F ECP5 FPGA")]:
         raise ValueError("JTAG scan chain did not include expected devices")
     end()
 
-def flash_analyzer(apollo):
-    todo(f"Flashing analyzer gateware")
-    return
-    bitstream = open('analyzer.bit', 'rb').read()
-    programmer = apollo.create_jtag_programmer(apollo.jtag)
-    programmer.unconfigure()
-    programmer.erase_flash()
-    programmer.flash(bitstream)
-    apollo.soft_reset()
+def unconfigure_fpga(apollo):
+    with apollo.jtag as jtag:
+        programmer = apollo.create_jtag_programmer(jtag)
+        start("Unconfiguring FPGA")
+        programmer.unconfigure()
+        done()
+
+def test_flash_id(apollo, expected_mfg, expected_part):
+    begin("Checking flash chip ID")
+    with apollo.jtag as jtag:
+        programmer = apollo.create_jtag_programmer(jtag)
+        start("Reading flash ID")
+        mfg, part = programmer.read_flash_id()
+        done()
+    start(f"Checking manufacturer ID is {info(f'0x{expected_mfg:02X}')}")
+    if mfg != expected_mfg:
+        raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
     done()
+    start(f"Checking part ID is {info(f'0x{expected_part:02X}')}")
+    if part != expected_part:
+        raise ValueError(f"Wrong flash chip part ID: 0x{part:02X}")
+    done()
+    end()
+
+def flash_bitstream(apollo, filename):
+    begin(f"Writing {info(filename)} to FPGA configuration flash")
+    bitstream = open(filename, 'rb').read()
+    start("Erasing flash")
+    with apollo.jtag as jtag:
+        programmer = apollo.create_jtag_programmer(jtag)
+        programmer.erase_flash()
+    done()
+    start("Writing flash")
+    with apollo.jtag as jtag:
+        programmer = apollo.create_jtag_programmer(jtag)
+        programmer.flash(bitstream)
+    done()
+    end()
 
 def configure_fpga(apollo, filename):
     start(f"Configuring FPGA with {info(filename)}")
     bitstream = open(filename, 'rb').read()
-    programmer = apollo.create_jtag_programmer(apollo.jtag)
-    programmer.configure(bitstream)
+    with apollo.jtag as jtag:
+        programmer = apollo.create_jtag_programmer(jtag)
+        programmer.configure(bitstream)
+    done()
+
+def request_control_handoff_to_fpga(apollo):
+    start(f"Requesting MCU handoff {info('CONTROL')} port to FPGA")
     apollo.honor_fpga_adv()
+    apollo.close()
     done()
 
 def find_device(vid, pid):
@@ -892,9 +933,6 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
     end()
 
-def request_apollo_reset():
-    todo(f"Requesting Apollo reset the EUT")
-
 def test_user_button(apollo):
     button = f"{info('USER')} button"
     begin(f"Testing {button}")
@@ -910,7 +948,7 @@ def test_user_button(apollo):
     done()
     end()
 
-def request_control_handoff(handle):
+def request_control_handoff_to_mcu(handle):
     start(f"Requesting FPGA handoff {info('CONTROL')} port to MCU")
     handle.controlWrite(
         usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)

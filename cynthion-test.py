@@ -124,8 +124,14 @@ def test():
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan(apollo)
 
+    # Unconfigure FPGA.
+    unconfigure_fpga(apollo)
+
+    # Check flash chip ID via the FPGA.
+    test_flash_id(apollo, 0xEF, 0xEF4016)
+
     # Flash analyzer bitstream.
-    flash_analyzer(apollo)
+    flash_bitstream(apollo, 'analyzer.bit')
 
     # Configure FPGA with test gateware.
     configure_fpga(apollo, 'selftest.bit')
@@ -278,6 +284,7 @@ def test():
     # Run HS speed test.
     begin("Testing USB HS comms on all ports")
     configure_fpga(apollo, 'speedtest.bit')
+    request_control_handoff_to_fpga(apollo)
     for port in ('AUX', 'TARGET-C'):
         todo(f"Testing USB HS comms on {info(port)}")
     for port in ('CONTROL',):
@@ -285,20 +292,23 @@ def test():
     end()
 
     # Tell the FPGA to hand off the control port to the MCU.
-    request_control_handoff(handle)
+    request_control_handoff_to_mcu(handle)
     sleep(1)
     test_apollo_present()
 
-    # Request Apollo reset, should cause analyzer to enumerate.
-    request_apollo_reset()
+    # Simulate pressing the RESET button, should cause analyzer to enumerate.
+    simulate_reset_button()
+    sleep(1)
     test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
     request('press the PROGRAM button')
+    sleep(1)
     test_apollo_present()
 
     # Request press of RESET button, should cause analyzer to enumerate.
     request('press the RESET button')
+    sleep(1)
     test_analyzer_present()
 
     begin("Powering off EUT")
