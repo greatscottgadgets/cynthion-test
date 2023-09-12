@@ -128,7 +128,7 @@ def test():
     flash_analyzer(apollo)
 
     # Configure FPGA with test gateware.
-    configure_fpga(apollo)
+    configure_fpga(apollo, 'selftest.bit')
 
     # Check all PHY supply voltages.
     begin("Checking all PHY supply voltages")

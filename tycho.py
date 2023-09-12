@@ -494,11 +494,12 @@ def flash_analyzer(apollo):
     apollo.soft_reset()
     done()
 
-def configure_fpga(apollo):
-    start(f"Configuring self-test gateware")
-    bitstream = open('selftest.bit', 'rb').read()
+def configure_fpga(apollo, filename):
+    start(f"Configuring FPGA with {info(filename)}")
+    bitstream = open(filename, 'rb').read()
     programmer = apollo.create_jtag_programmer(apollo.jtag)
     programmer.configure(bitstream)
+    apollo.honor_fpga_adv()
     done()
 
 def find_device(vid, pid):
