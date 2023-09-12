@@ -34,7 +34,7 @@ def test():
             begin(f"Testing with {info(f'{voltage:.2f} V')} supply "
                   f"on {info(supply_port)}")
             set_boost_supply(voltage, 0.2)
-            sleep(0.05)
+            sleep(0.01)
 
             schottky_drop_min, schottky_drop_max = (0.35, 0.8)
 
