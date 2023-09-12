@@ -429,6 +429,13 @@ def test_apollo_present():
     run_command('apollo info')
     done()
 
+def simulate_program_button():
+    begin(f"Simulating pressing the {info('PROGRAM')} button")
+    set_pin('nBTN_PROGRAM', False)
+    sleep(0.1)
+    set_pin('nBTN_PROGRAM', None)
+    end()
+
 def set_debug_leds(apollo, bitmask):
     start(f"Setting debug LEDs to 0b{bitmask:05b}")
     apollo.set_led_pattern(bitmask)

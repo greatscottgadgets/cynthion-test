@@ -105,11 +105,8 @@ def test():
 
     sleep(0.1)
 
-    begin(f"Simulating pressing the {info('PROGRAM')} button")
-    set_pin('nBTN_PROGRAM', False)
-    sleep(0.1)
-    set_pin('nBTN_PROGRAM', None)
-    end()
+    # Simulate pressing the PROGRAM button.
+    simulate_program_button()
 
     sleep(0.7)
 
