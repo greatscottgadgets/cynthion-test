@@ -12,6 +12,7 @@ from greatfet import *
 from time import sleep
 import colorama
 import inspect
+import usb1
 import os
 
 gpio_allocations = dict(
@@ -154,6 +155,8 @@ boost = TPS55288(gf)
 boost.disable()
 
 colorama.init()
+
+context = usb1.USBContext()
 
 indent = 0
 
@@ -424,10 +427,15 @@ def flash_firmware():
     run_command('dfu-util -a 0 -d 1d50:615c -D luna_d11-firmware.bin')
     done()
 
+def test_saturnv_present():
+    begin(f"Checking for Saturn-V")
+    find_device(0x1d50, 0x615c)
+    end()
+
 def test_apollo_present():
-    start(f"Checking for Apollo")
-    run_command('apollo info')
-    done()
+    begin(f"Checking for Apollo")
+    find_device(0x1d50, 0x615c)
+    end()
 
 def simulate_program_button():
     begin(f"Simulating pressing the {info('PROGRAM')} button")
@@ -492,6 +500,16 @@ def configure_fpga(apollo):
     programmer = apollo.create_jtag_programmer(apollo.jtag)
     programmer.configure(bitstream)
     done()
+
+def find_device(vid, pid):
+    start(f"Looking for device with VID {info(f'0x{vid:04x}')} " +
+          f"and PID {info(f'0x{pid:04x}')}")
+    device = context.getByVendorIDAndProductID(vid, pid)
+    if device is None:
+        fail()
+    else:
+        done()
+    return device
 
 def run_self_test(apollo):
     begin("Running self test")

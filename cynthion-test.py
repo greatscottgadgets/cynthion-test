@@ -100,6 +100,9 @@ def test():
 
     sleep(1)
 
+    # Check Saturn-V enumerates.
+    test_saturnv_present()
+
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
 
@@ -109,6 +112,9 @@ def test():
     simulate_program_button()
 
     sleep(0.7)
+
+    # Check Apollo enumerates.
+    test_apollo_present()
 
     # Connect to the Apollo debug interface.
     start("Connecting to Apollo")
