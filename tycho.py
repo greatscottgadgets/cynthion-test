@@ -429,12 +429,26 @@ def flash_firmware():
 
 def test_saturnv_present():
     begin(f"Checking for Saturn-V")
-    find_device(0x1d50, 0x615c)
+    device = find_device(0x1d50, 0x615c)
+    match_device(device, "Great Scott Gadgets", "LUNA Saturn-V RCM Bootloader")
     end()
 
 def test_apollo_present():
     begin(f"Checking for Apollo")
-    find_device(0x1d50, 0x615c)
+    device = find_device(0x1d50, 0x615c)
+    match_device(device, "Great Scott Gadgets", "Apollo Debugger")
+    end()
+
+def test_bridge_present():
+    begin(f"Checking for flash bridge")
+    device = find_device(0x1d50, 0x615b)
+    match_device(device, "LUNA", "Configuration Flash bridge")
+    end()
+
+def test_analyzer_present():
+    begin(f"Checking for analyzer")
+    device = find_device(0x1d50, 0x615b)
+    match_device(device, "LUNA", "USB Analyzer")
     end()
 
 def simulate_program_button():
@@ -508,9 +522,21 @@ def find_device(vid, pid):
     device = context.getByVendorIDAndProductID(vid, pid)
     if device is None:
         fail()
+        raise ValueError("Device not found")
     else:
         done()
     return device
+
+def match_device(device, manufacturer, product):
+    start(f"Checking manufacturer is {info(manufacturer)}")
+    if device.getManufacturer() != manufacturer:
+        raise ValueError("Wrong manufacturer string")
+    done()
+    start(f"Checking product is {info(product)}")
+    if device.getProduct() != product:
+        raise ValueError("Wrong product string")
+    done()
+    item(f"Device serial is {info(device.getSerialNumber())}")
 
 def run_self_test(apollo):
     begin("Running self test")
@@ -889,9 +915,6 @@ def request_control_handoff(handle):
     handle.controlWrite(
         usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)
     done()
-
-def test_analyzer_present():
-    todo(f"Checking for analyzer")
 
 def send_usb_reset():
     pass
