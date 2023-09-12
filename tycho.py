@@ -643,7 +643,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
     imin_off = -0.01
     imax_off =  0.01
     src_resistance = 0.08
-    input_cable_resistance = 0.05
+    input_cable_resistance = 0.04
     eut_resistance = 0.12
     output_cable_resistance = 0.07
 
