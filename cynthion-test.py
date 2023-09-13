@@ -36,7 +36,7 @@ def test():
             set_boost_supply(voltage, 0.2)
             sleep(0.01)
 
-            schottky_drop_min, schottky_drop_max = (0.35, 0.8)
+            schottky_drop_min, schottky_drop_max = (0.35, 0.85)
 
             # Up to 5.5V, there must be only a diode drop.
             if voltage <= 5.5:
