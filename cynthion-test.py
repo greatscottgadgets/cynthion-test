@@ -93,8 +93,6 @@ def test():
     # Flash Saturn-V bootloader to MCU via SWD.
     flash_bootloader()
 
-    sleep(1)
-
     # Connect host D+/D- to control port.
     connect_host_to('CONTROL')
 
