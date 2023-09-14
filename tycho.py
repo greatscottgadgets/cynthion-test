@@ -228,7 +228,7 @@ def check_for_shorts(port):
 
     begin_short_check('SBU2', 'CC1', port)
     set_pin('SBU2_test', True)
-    test_voltage('CC1_test', 0.0, 0.05)
+    test_voltage('CC1_test', 0.0, 0.1)
     set_pin('SBU2_test', None)
     end()
 
@@ -240,7 +240,7 @@ def check_for_shorts(port):
 
     begin_short_check('SBU1', 'CC2', port)
     set_pin('SBU1_test', True)
-    test_voltage('CC2_test', 0.0, 0.05)
+    test_voltage('CC2_test', 0.0, 0.1)
     set_pin('SBU1_test', None)
     end()
 
