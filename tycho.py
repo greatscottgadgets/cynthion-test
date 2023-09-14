@@ -299,6 +299,7 @@ def check_cc_resistance(pin, minimum, maximum):
     channel = f'{pin}_test'
     mux_select(channel)
     samples = gf.adc.read_samples(1000)
+    mux_disconnect()
     voltage = (3.3 / 1024) * sum(samples) / len(samples)
     item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
     resistance = (3.3 * 30 - voltage * 35.1) / (voltage - 3.3)
@@ -347,6 +348,10 @@ def mux_select(channel):
         MUX2_A3.write(pin & 8)
         MUX2_EN.high()
 
+def mux_disconnect():
+    MUX1_EN.low()
+    MUX2_EN.low()
+
 def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
     message = f"Checking {qty} on {info(src)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} {unit}')}: "
     result = f"{value:.2f} {unit}"
@@ -373,8 +378,8 @@ def test_voltage(channel, minimum, maximum):
         scale = 3.3 / 1024 * (30 + 5.1) / 5.1
 
     mux_select(channel)
-
     samples = gf.adc.read_samples(1000)
+    mux_disconnect()
     voltage = scale * sum(samples) / len(samples)
 
     return test_value("voltage", channel, voltage, 'V', minimum, maximum)
@@ -411,6 +416,7 @@ def disconnect_supply_and_discharge(port):
     sleep(0.5)
     V_DIV.low()
     V_DIV_MULT.low()
+    mux_disconnect()
 
 def test_clock():
     todo(f"Checking clock frequency")
