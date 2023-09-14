@@ -250,6 +250,8 @@ def check_for_shorts(port):
     set_pin('CC2_test', None)
     end()
 
+    connect_tester_cc_sbu_to(None)
+
     end()
 
 def connect_grounds():
@@ -283,6 +285,7 @@ def begin_cc_measurement(port):
 
 def end_cc_measurement():
     CC_PULL_UP.high()
+    connect_tester_cc_sbu_to(None)
 
 def check_cc_resistances(port):
     begin(f"Checking CC resistances on {info(port)}")
