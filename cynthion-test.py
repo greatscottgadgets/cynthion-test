@@ -131,6 +131,16 @@ def test():
     # Flash analyzer bitstream.
     flash_bitstream(apollo, 'analyzer.bit')
 
+    # Reconnect to Apollo.
+    begin("Reconnecting to Apollo")
+    simulate_program_button()
+    sleep(0.7)
+    test_apollo_present()
+    start("Connecting to Apollo")
+    apollo = ApolloDebugger()
+    done()
+    end()
+
     # Configure FPGA with test gateware.
     configure_fpga(apollo, 'selftest.bit')
 

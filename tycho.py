@@ -6,6 +6,8 @@ from selftest import InteractiveSelftest, \
     REGISTER_PWR_MON_ADDR, REGISTER_PWR_MON_VALUE, \
     REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
     REGISTER_AUX_SBU, REGISTER_TARGET_SBU, REGISTER_BUTTON_USER
+from luna.gateware.applets.flash_bridge import FlashBridgeConnection
+from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
@@ -540,15 +542,16 @@ def test_flash_id(apollo, expected_mfg, expected_part):
 def flash_bitstream(apollo, filename):
     begin(f"Writing {info(filename)} to FPGA configuration flash")
     bitstream = open(filename, 'rb').read()
-    start("Erasing flash")
-    with apollo.jtag as jtag:
-        programmer = apollo.create_jtag_programmer(jtag)
-        programmer.erase_flash()
+    configure_fpga(apollo, 'flashbridge.bit')
+    request_control_handoff_to_fpga(apollo)
+    sleep(1)
+    test_bridge_present()
+    start("Connecting to flash bridge")
+    bridge = FlashBridgeConnection()
+    programmer = ECP5FlashBridgeProgrammer(bridge=bridge)
     done()
     start("Writing flash")
-    with apollo.jtag as jtag:
-        programmer = apollo.create_jtag_programmer(jtag)
-        programmer.flash(bitstream)
+    programmer.flash(bitstream)
     done()
     end()
 
