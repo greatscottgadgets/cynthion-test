@@ -421,7 +421,17 @@ def disconnect_supply_and_discharge(port):
     mux_disconnect()
 
 def test_clock():
-    todo(f"Checking clock frequency")
+    reference_hz = 204000000 // 10
+    target_hz = 60000000
+    tolerance_ppm = 50
+    tolerance_hz = target_hz * tolerance_ppm / 1e6
+    fmin = target_hz - tolerance_hz
+    fmax = target_hz + tolerance_hz
+    gf.apis.freq_count.setup_counters(reference_hz)
+    gf.apis.freq_count.setup_counters(reference_hz)
+    sleep(0.1)
+    frequency = gf.apis.freq_count.count_cycles() * 10
+    test_value("frequency", "CLK", frequency, 'Hz', fmin, fmax)
 
 def run_command(cmd):
     result = os.system(cmd + " > /dev/null 2>&1")
