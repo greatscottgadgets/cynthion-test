@@ -128,19 +128,6 @@ def test():
     # Check flash chip ID via the FPGA.
     test_flash_id(apollo, 0xEF, 0xEF4016)
 
-    # Flash analyzer bitstream.
-    flash_bitstream(apollo, 'analyzer.bit')
-
-    # Reconnect to Apollo.
-    begin("Reconnecting to Apollo")
-    simulate_program_button()
-    sleep(0.7)
-    test_apollo_present()
-    start("Connecting to Apollo")
-    apollo = ApolloDebugger()
-    done()
-    end()
-
     # Configure FPGA with test gateware.
     configure_fpga(apollo, 'selftest.bit')
 
@@ -246,6 +233,47 @@ def test():
         end_cc_measurement()
     end()
 
+    # Run HS speed test.
+    begin("Testing USB HS comms on all ports")
+    configure_fpga(apollo, 'speedtest.bit')
+    request_control_handoff_to_fpga(apollo)
+    for port in ('AUX', 'TARGET-C'):
+        todo(f"Testing USB HS comms on {info(port)}")
+    for port in ('CONTROL',):
+        handle = test_usb_hs(port)
+    end()
+
+    # Request handoff and reconnect to Apollo.
+    begin("Switching to Apollo via handoff")
+    request_control_handoff_to_mcu(handle)
+    sleep(0.7)
+    test_apollo_present()
+    start("Connecting to Apollo")
+    apollo = ApolloDebugger()
+    done()
+    end()
+
+    # Flash analyzer bitstream.
+    flash_bitstream(apollo, 'analyzer.bit')
+
+    # Simulate pressing the RESET button, should cause analyzer to enumerate.
+    simulate_reset_button()
+    sleep(1)
+    test_analyzer_present()
+
+    # Trigger handoff by button and reconnect to Apollo.
+    begin("Switching to Apollo via button")
+    simulate_program_button()
+    sleep(0.7)
+    test_apollo_present()
+    start("Connecting to Apollo")
+    apollo = ApolloDebugger()
+    done()
+    end()
+
+    # Configure FPGA with test gateware again.
+    configure_fpga(apollo, 'selftest.bit')
+
     # Request the operator connect a cable to Target-A.
     # request_target_a_cable()
 
@@ -288,26 +316,6 @@ def test():
 
     # Request press of USER button, should be detected by FPGA.
     test_user_button(apollo)
-
-    # Run HS speed test.
-    begin("Testing USB HS comms on all ports")
-    configure_fpga(apollo, 'speedtest.bit')
-    request_control_handoff_to_fpga(apollo)
-    for port in ('AUX', 'TARGET-C'):
-        todo(f"Testing USB HS comms on {info(port)}")
-    for port in ('CONTROL',):
-        handle = test_usb_hs(port)
-    end()
-
-    # Tell the FPGA to hand off the control port to the MCU.
-    request_control_handoff_to_mcu(handle)
-    sleep(1)
-    test_apollo_present()
-
-    # Simulate pressing the RESET button, should cause analyzer to enumerate.
-    simulate_reset_button()
-    sleep(1)
-    test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
     request('press the PROGRAM button')
