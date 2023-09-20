@@ -61,6 +61,8 @@ gpio_allocations = dict(
     SIG2_S = ('J2_P27', 0),
     nBTN_PROGRAM = ('J1_P27', None),
     nBTN_RESET = ('J1_P29', None),
+    PASS = ('J2_P35', None),
+    FAIL = ('J2_P36', None),
 )
 
 mux_channels = {
@@ -193,10 +195,29 @@ def start(text):
 def done():
     print(Fore.GREEN + "OK" + Style.RESET_ALL)
 
+def pass_pressed():
+    return not PASS.input()
+
+def fail_pressed():
+    return not FAIL.input()
+
 def request(text):
-    print(Fore.BLUE)
-    print(" === Please " + text + " and press ENTER === " + Style.RESET_ALL)
-    input()
+    # Wait for any currently pressed button to be released.
+    while pass_pressed() or fail_pressed():
+        sleep(0.01)
+    print()
+    print(
+        Fore.BLUE + " === Please " + text + " and press " +
+        Fore.GREEN + "PASS" + Fore.BLUE + " or " +
+        Fore.RED + "FAIL" + Fore.BLUE + " === " +
+        Style.RESET_ALL)
+    print()
+    while True:
+        if fail_pressed():
+            raise RuntimeError("Test failed at user request")
+        elif pass_pressed():
+            return
+        sleep(0.001)
 
 def fail():
     print(Fore.RED + "FAIL" + Style.RESET_ALL)
