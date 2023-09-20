@@ -147,70 +147,8 @@ def test():
     # 
     run_self_test(apollo)
 
-    begin("Testing FPGA control of VBUS input selection")
-
-    begin("Handing off EUT supply from boost converter to host")
-    set_boost_supply(4.5, 0.2)
-    connect_host_supply_to('CONTROL')
-    connect_boost_supply_to(None)
-    end()
-
-    begin("Connect DC-DC to AUX at a voltage higher than the host supply")
-    set_boost_supply(5.4, 0.2)
-    connect_boost_supply_to('AUX')
-
-    # Define ranges to distinguish high and low supplies.
-    schottky_drop_min, schottky_drop_max = (0.65, 0.85)
-    high_min = 5.35 - schottky_drop_max
-    high_max = 5.45 - schottky_drop_min
-    low_min = 3.5
-    low_max = 5.05 - schottky_drop_min
-
-    # Ensure that ranges are distinguishable.
-    assert(high_min > low_max)
-
-    # 5V rail should be switched to the higher supply.
-    test_voltage('+5V', high_min, high_max)
-    end()
-
-    begin("Test FPGA control of AUX supply input")
-    # Tell the FPGA to disable the AUX supply input.
-    # 5V rail should be switched to the lower host supply on CONTROL.
-    enable_supply_input(apollo, 'AUX', False)
-    test_voltage('+5V', low_min, low_max)
-    # Re-enable AUX supply, check 5V rail is switched back to it.
-    enable_supply_input(apollo, 'AUX', True)
-    test_voltage('+5V', high_min, high_max)
-    end()
-
-    begin("Swap ports between host and boost converter")
-    set_boost_supply(4.5, 0.2)
-    connect_host_supply_to('AUX')
-    connect_boost_supply_to('CONTROL')
-    end()
-
-    begin("Increase boost voltage to identifiable level")
-    set_boost_supply(5.4, 0.2)
-    test_voltage('+5V', high_min, high_max)
-    end()
-
-    begin("Test FPGA control of CONTROL supply input")
-    # Tell the FPGA to disable the CONTROL supply input.
-    # 5V rail should be switched to the lower host supply on AUX.
-    enable_supply_input(apollo, 'CONTROL', False)
-    test_voltage('+5V', low_min, low_max)
-    # Re-enable CONTROL supply, check 5V rail is switched back to it.
-    enable_supply_input(apollo, 'CONTROL', True)
-    test_voltage('+5V', high_min, high_max)
-    end()
-
-    begin("Swap back to powering from host")
-    set_boost_supply(4.5, 0.2)
-    connect_host_supply_to('CONTROL')
-    connect_boost_supply_to(None)
-    end()
-
-    end()
+    # Check that the FPGA can control the supply selection.
+    test_supply_selection(apollo)
 
     begin("Checking FPGA control of CC and SBU lines")
     for port in ('AUX', 'TARGET-C'):
