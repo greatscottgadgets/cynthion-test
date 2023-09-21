@@ -129,17 +129,17 @@ sbu_registers = {
 }
 
 mon_voltage_registers = {
-    'CONTROL': 0x08,
-    'AUX': 0x07,
-    'TARGET-C': 0x0A,
-    'TARGET-A': 0x09,
+    'CONTROL': 0x0A,
+    'AUX': 0x09,
+    'TARGET-C': 0x08,
+    'TARGET-A': 0x07,
 }
 
 mon_current_registers = {
-    'CONTROL': 0x0C,
-    'AUX': 0x0B,
-    'TARGET-C': 0x0E,
-    'TARGET-A': 0x0D,
+    'CONTROL': 0x0E,
+    'AUX': 0x0D,
+    'TARGET-C': 0x0C,
+    'TARGET-A': 0x0B,
 }
 
 gf = GreatFET()
@@ -542,7 +542,7 @@ def test_jtag_scan(apollo):
             for device in jtag.enumerate()]
     for idcode, desc in devices:
         item(f"Found {info(f'0x{idcode:8X}')}: {info(desc)}")
-    if devices != [(0x41111043, "Lattice LFE5U-25F ECP5 FPGA")]:
+    if devices != [(0x21111043, "Lattice LFE5U-12F ECP5 FPGA")]:
         raise ValueError("JTAG scan chain did not include expected devices")
     end()
 
@@ -850,11 +850,6 @@ def test_eut_current(apollo, port, imin, imax):
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     if value >= 32768:
         value -= 65536
-
-    # ¯\_(ツ)_/¯
-    if port == 'CONTROL' and value > 0:
-        value *= 1.87
-
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
@@ -934,7 +929,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
     imax_off =  0.01
     src_resistance = 0.08
     input_cable_resistance = 0.04
-    eut_resistance = 0.12
+    eut_resistance = 0.1
     output_cable_resistance = 0.07
 
     if passthrough:
