@@ -18,6 +18,8 @@ import usb1
 import os
 
 context = usb1.USBContext()
+last_bus = None
+last_addr = None
 
 vbus_registers = {
     'CONTROL': REGISTER_CON_VBUS_EN,
@@ -323,26 +325,26 @@ def flash_firmware():
 
 def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
-        device = find_device(0x1d50, 0x615c)
-        match_device(device, "Great Scott Gadgets", "LUNA Saturn-V RCM Bootloader")
+        return find_device(0x1d50, 0x615c,
+                           "Great Scott Gadgets",
+                           "LUNA Saturn-V RCM Bootloader")
 
 def test_apollo_present():
     with group(f"Checking for Apollo"):
-        device = find_device(0x1d50, 0x615c)
-        match_device(device, "Great Scott Gadgets", "Apollo Debugger")
+        find_device(0x1d50, 0x615c,
+                    "Great Scott Gadgets",
+                    "Apollo Debugger")
     with task("Connecting to Apollo"):
         apollo = ApolloDebugger()
     return apollo
 
 def test_bridge_present():
     with group(f"Checking for flash bridge"):
-        device = find_device(0x1d50, 0x615b)
-        match_device(device, "LUNA", "Configuration Flash bridge")
+        return find_device(0x1d50, 0x615b, "LUNA", "Configuration Flash bridge")
 
 def test_analyzer_present():
     with group(f"Checking for analyzer"):
-        device = find_device(0x1d50, 0x615b)
-        match_device(device, "LUNA", "USB Analyzer")
+        return find_device(0x1d50, 0x615b, "LUNA", "USB Analyzer")
 
 def simulate_program_button():
     with group(f"Simulating pressing the {info('PROGRAM')} button"):
@@ -434,22 +436,60 @@ def request_control_handoff_to_fpga(apollo):
         apollo.honor_fpga_adv()
         apollo.close()
 
-def find_device(vid, pid):
-    with task(f"Looking for device with VID {info(f'0x{vid:04x}'):} " +
-              f"and PID {info(f'0x{pid:04x}')}"):
-        device = context.getByVendorIDAndProductID(vid, pid)
-        if device is None:
-            raise ValueError("Device not found")
-        return device
+def find_device(vid, pid, mfg, prod):
+    global last_bus, last_addr
+    with group(f"Looking for device with"):
+        item(f"VID: {info(f'0x{vid:04x}')}, PID: {info(f'0x{pid:04x}')}")
+        item(f"Manufacturer: {info(mfg)}")
+        item(f"Product: {info(prod)}")
 
-def match_device(device, manufacturer, product):
-    with task(f"Checking manufacturer is {info(manufacturer)}"):
-        if device.getManufacturer() != manufacturer:
-            raise ValueError("Wrong manufacturer string")
-    with task(f"Checking product is {info(product)}"):
-        if device.getProduct() != product:
-            raise ValueError("Wrong product string")
-    item(f"Device serial is {info(device.getSerialNumber())}")
+        candidates = []
+
+        def callback(context, device, event):
+            candidates.append(device)
+            return False
+
+        callback_handle = context.hotplugRegisterCallback(
+                callback,
+                vendor_id=vid,
+                product_id=pid,
+                events=usb1.HOTPLUG_EVENT_DEVICE_ARRIVED,
+                flags=usb1.HOTPLUG_ENUMERATE)
+
+        end = time() + 3
+
+        while (timeout := end - time()) > 0:
+            context.handleEventsTimeout(timeout)
+            try:
+                while device := candidates.pop():
+                    bus = device.getBusNumber()
+                    addr = device.getDeviceAddress()
+                    # New device must be on the same bus as previously.
+                    if last_bus is not None and bus != last_bus:
+                        continue
+                    # New device must have a different address to previous one.
+                    if addr == last_addr:
+                        continue
+                    with group(f"Found at bus {info(bus)} address {info(addr)}"):
+                            with task(f"Checking manufacturer is {info(mfg)}"):
+                                if (string := device.getManufacturer()) != mfg:
+                                    raise ValueError(
+                                        f"Wrong manufacturer string: '{string}'")
+                            with task(f"Checking product is {info(prod)}"):
+                                if (string := device.getProduct()) != prod:
+                                    raise ValueError(
+                                        f"Wrong product string: '{string}'")
+                            serial = device.getSerialNumber()
+                            item(f"Device serial is {info(serial)}")
+                    context.hotplugDeregisterCallback(callback_handle)
+                    last_bus = bus
+                    last_addr = addr
+                    return device
+            except (IndexError, usb1.USBError, ValueError):
+                continue
+        else:
+            context.hotplugDeregisterCallback(callback_handle)
+            raise ValueError("Device not found")
 
 def run_self_test(apollo):
     with group("Running self test"):
@@ -522,7 +562,8 @@ def test_usb_hs(port):
                 failed_out = status
 
         # Grab a reference to our device...
-        handle = find_device(0x1209, pids[port]).open()
+        device = find_device(0x1209, pids[port], "LUNA", "IN speed test")
+        handle = device.open()
 
         # ... and claim its bulk interface.
         handle.claimInterface(0)
