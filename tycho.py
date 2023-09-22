@@ -817,12 +817,6 @@ def set_passthrough(apollo, port, enable):
     write_register(apollo, passthrough_registers[port], enable)
     done()
 
-def set_target_passive():
-    todo(f"Setting target PHY to passive mode")
-
-def test_usb_fs():
-    todo(f"Testing USB FS comms through target passthrough")
-
 def test_vbus(input_port, vmin, vmax):
     test_voltage(vbus_channels[input_port], vmin, vmax)
 
@@ -1062,5 +1056,3 @@ def request_control_handoff_to_mcu(handle):
         usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)
     done()
 
-def send_usb_reset():
-    pass
