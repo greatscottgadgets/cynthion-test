@@ -25,6 +25,16 @@ def ask(text):
         Style.RESET_ALL)
     print()
 
+def ok(text):
+    print()
+    print(Fore.GREEN + "PASS" + Style.RESET_ALL + ": " + text)
+    print()
+
+def fail(text):
+    print()
+    print(Fore.RED + "FAIL" + Style.RESET_ALL + ": " + text)
+    print()
+
 class group():
     def __init__(self, text):
         self.text = text
