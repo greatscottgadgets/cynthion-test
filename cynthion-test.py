@@ -41,16 +41,19 @@ def test():
     for port in ('CONTROL', 'AUX'):
         test_supply_port(port)
 
+    # Supply EUT through CONTROL port for subsequent tests.
     begin("Powering EUT for testing")
     set_boost_supply(5.0, 0.2)
     connect_boost_supply_to('CONTROL')
     end()
 
+    # Check all supply rails come up correctly.
     begin("Checking all supply voltages")
     for (testpoint, minimum, maximum) in supplies:
         test_voltage(testpoint, minimum, maximum)
     end()
 
+    # Re-check the CC resistances now that the Type-C controllers have power.
     begin("Checking CC resistances with EUT powered")
     for port in ('AUX', 'TARGET-C'):
         check_cc_resistances(port)
@@ -114,6 +117,7 @@ def test():
     # Check that the FPGA can control the supply selection.
     test_supply_selection(apollo)
 
+    # Check that the FPGA can control the CC and SBU lines.
     begin("Checking FPGA control of CC and SBU lines")
     for port in ('AUX', 'TARGET-C'):
         test_cc_sbu_control(apollo, port)
@@ -167,9 +171,9 @@ def test():
 
     todo("Test USB HS comms through target passthrough")
 
-    configure_power_monitor(apollo)
-
+    # Test VBUS distribution at full voltages and currents.
     begin("Testing VBUS distribution")
+    configure_power_monitor(apollo)
     for (voltage, load_resistance, load_pin) in (
             ( 5.0,  1.72, 'TEST_5V' ),
             (10.0, 38.38, 'TEST_20V')):
@@ -180,14 +184,21 @@ def test():
                     load_pin, passthrough, input_port)
     end()
 
+    # Test all LEDs.
     begin("Testing LEDs")
     test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
     test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
+
+    # Turn on all LEDs.
     begin("Checking visual appearance of LEDs")
     set_fpga_leds(apollo, 0b111111)
     set_debug_leds(apollo, 0b11111)
     set_pin('REF_LED_EN', True)
+
+    # Ask the user to check the LEDs appear correct.
     request("check LEDs match reference")
+
+    # Turn off LEDs.
     set_pin('REF_LED_EN', False)
     set_debug_leds(apollo, 0)
     set_fpga_leds(apollo, 0)
@@ -207,11 +218,13 @@ def test():
     sleep(1)
     test_analyzer_present()
 
+    # Power down the EUT.
     begin("Powering off EUT")
     connect_boost_supply_to(None)
     connect_host_supply_to(None)
     end()
 
+    # Repeat VBUS distribution tests for TARGET-C -> TARGET-A with EUT off.
     begin(f"Testing VBUS distribution with EUT off")
     for (voltage, load_resistance, load_pin) in (
             ( 5.0,  1.72, 'TEST_5V' ),
