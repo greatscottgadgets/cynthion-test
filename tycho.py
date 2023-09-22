@@ -753,7 +753,10 @@ def test_usb_hs(port):
     return handle
 
 def connect_tester_cc_sbu_to(port):
-    item(f"Connecting tester CC/SBU lines to {info(port)}")
+    if port is None:
+        item("Disconnecting tester CC/SBU lines")
+    else:
+        item(f"Connecting tester CC/SBU lines to {info(port)}")
     SIG1_OEn.high()
     SIG2_OEn.high()
     if port is None:
