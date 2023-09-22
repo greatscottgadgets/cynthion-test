@@ -238,7 +238,7 @@ def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
         item(message + Fore.GREEN + result)
     return value
 
-def test_voltage(channel, minimum, maximum):
+def measure_voltage(channel, minimum, maximum):
     if maximum <= 6.6:
         V_DIV.high()
         V_DIV_MULT.low()
@@ -253,6 +253,10 @@ def test_voltage(channel, minimum, maximum):
     mux_disconnect()
     voltage = scale * sum(samples) / len(samples)
 
+    return voltage
+
+def test_voltage(channel, minimum, maximum):
+    voltage = measure_voltage(channel, minimum, maximum)
     return test_value("voltage", channel, voltage, 'V', minimum, maximum)
 
 def set_pin(pin, level):
@@ -281,10 +285,12 @@ def disconnect_supply_and_discharge(port):
     discharge(port)
 
 def discharge(port):
-    mux_select(vbus_channels[port])
+    channel = vbus_channels[port]
+    mux_select(channel)
     V_DIV.high()
     V_DIV_MULT.high()
-    sleep(0.5)
+    while measure_voltage(channel, 0, 5) > 0.1:
+        sleep(0.05)
     V_DIV.low()
     V_DIV_MULT.low()
     mux_disconnect()
