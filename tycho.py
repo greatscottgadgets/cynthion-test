@@ -482,6 +482,10 @@ def test_apollo_present():
     device = find_device(0x1d50, 0x615c)
     match_device(device, "Great Scott Gadgets", "Apollo Debugger")
     end()
+    start("Connecting to Apollo")
+    apollo = ApolloDebugger()
+    done()
+    return apollo
 
 def test_bridge_present():
     begin(f"Checking for flash bridge")

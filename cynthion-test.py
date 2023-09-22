@@ -112,13 +112,8 @@ def test():
 
     sleep(0.7)
 
-    # Check Apollo enumerates.
-    test_apollo_present()
-
-    # Connect to the Apollo debug interface.
-    start("Connecting to Apollo")
-    apollo = ApolloDebugger()
-    done()
+    # Check Apollo enumerates, and open it.
+    apollo = test_apollo_present()
 
     # Check JTAG scan via Apollo finds the FPGA.
     test_jtag_scan(apollo)
@@ -188,10 +183,7 @@ def test():
     begin("Switching to Apollo via handoff")
     request_control_handoff_to_mcu(handle)
     sleep(0.7)
-    test_apollo_present()
-    start("Connecting to Apollo")
-    apollo = ApolloDebugger()
-    done()
+    apollo = test_apollo_present()
     end()
 
     # Flash analyzer bitstream.
@@ -206,10 +198,7 @@ def test():
     begin("Switching to Apollo via button")
     simulate_program_button()
     sleep(0.7)
-    test_apollo_present()
-    start("Connecting to Apollo")
-    apollo = ApolloDebugger()
-    done()
+    apollo = test_apollo_present()
     end()
 
     # Configure FPGA with test gateware again.
