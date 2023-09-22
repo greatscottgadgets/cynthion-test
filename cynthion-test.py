@@ -17,17 +17,29 @@ def test():
         check_cc_resistances(port)
     end()
 
+    # Apply power at TARGET-C port.
+    begin(f"Testing with VBUS applied to {info('TARGET-C')}")
+    set_boost_supply(5.0, 0.05)
+    connect_boost_supply_to('TARGET-C')
+    test_vbus('TARGET-C', 4.85, 5.05)
+
+    # Check the voltage reaches the EUT's TARGET-A port.
+    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+
+    # Make sure TARGET-A cable is disconnected.
+    test_target_a_cable(False)
+
+    # Make sure there is no leakage to CONTROL and AUX ports.
+    for port in ('CONTROL', 'AUX'):
+        test_leakage(port)
+
+    # Finished testing with supply from TARGET-C.
+    disconnect_supply_and_discharge('TARGET-C')
+    end()
+
     # Test supplying VBUS through CONTROL and AUX ports.
     for port in ('CONTROL', 'AUX'):
         test_supply_port(port)
-
-    begin("Testing passthrough at low current with power off")
-    set_boost_supply(5.0, 0.2)
-    connect_boost_supply_to('TARGET-C')
-    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
-    test_target_a_cable(False)
-    disconnect_supply_and_discharge('TARGET-C')
-    end()
 
     begin("Powering EUT for testing")
     set_boost_supply(5.0, 0.2)
