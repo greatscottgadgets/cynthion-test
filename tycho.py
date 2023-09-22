@@ -12,6 +12,7 @@ from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
 from greatfet import *
 from time import time, sleep
+import numpy as np
 import colorama
 import inspect
 import usb1
@@ -854,6 +855,52 @@ def test_eut_current(apollo, port, imin, imax):
     resistance = 0.02
     current = voltage / resistance
     return test_value("EUT current", port, current, 'A', imin, imax)
+
+def test_supply_port(supply_port):
+    begin(f"Testing VBUS supply though {info(supply_port)}")
+
+    # Connect 5V supply via this port.
+    set_boost_supply(5.0, 0.2)
+    connect_boost_supply_to(supply_port)
+
+    # Check supply present at port.
+    test_vbus(supply_port, 4.85, 5.1)
+
+    # Ramp the supply in 50mV steps up to 6.25V.
+    for voltage in np.arange(5.0, 6.25, 0.05):
+        begin(f"Testing with {info(f'{voltage:.2f} V')} supply "
+              f"on {info(supply_port)}")
+        set_boost_supply(voltage, 0.2)
+        sleep(0.01)
+
+        schottky_drop_min, schottky_drop_max = (0.35, 0.85)
+
+        # Up to 5.5V, there must be only a diode drop.
+        if voltage <= 5.5:
+            minimum = voltage - schottky_drop_max
+            maximum = voltage - schottky_drop_min
+        # Between 5.5V and 6.0V, OVP may kick in.
+        elif 5.5 <= voltage <= 6.0:
+            minimum = 0
+            maximum = voltage - schottky_drop_min
+        # Above 6.0V, OVP must kick in.
+        else:
+            minimum = 0
+            maximum = 6.0 - schottky_drop_min
+
+        # Check voltage at +5V rail.
+        test_voltage('+5V', minimum, maximum)
+
+        begin("Checking for leakage to other ports")
+        for port in ('CONTROL', 'AUX', 'TARGET-C', 'TARGET-A'):
+            if port != supply_port:
+                test_leakage(port)
+        end()
+
+        end()
+
+    disconnect_supply_and_discharge(supply_port)
+    end()
 
 def test_supply_selection(apollo):
     begin("Testing FPGA control of VBUS input selection")
