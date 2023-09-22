@@ -1,4 +1,3 @@
-from colorama import Fore, Back, Style
 from selftest import InteractiveSelftest, \
     REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
     REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
@@ -10,10 +9,10 @@ from luna.gateware.applets.flash_bridge import FlashBridgeConnection
 from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
 from tps55288 import TPS55288
+from formatting import *
 from greatfet import *
 from time import time, sleep
 import numpy as np
-import colorama
 import inspect
 import usb1
 import os
@@ -159,11 +158,7 @@ BOOST_EN.high()
 boost = TPS55288(gf)
 boost.disable()
 
-colorama.init()
-
 context = usb1.USBContext()
-
-indent = 0
 
 def reset():
     for name, (position, state) in gpio_allocations.items():
@@ -175,27 +170,6 @@ def reset():
         else:
             pin.low()
 
-def msg(text, end, flush=False):
-    print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
-
-def item(text):
-    msg(text, "\n")
-
-def begin(text):
-    global indent
-    msg(text, ":\n")
-    indent += 1
-
-def end():
-    global indent
-    indent -= 1
-
-def start(text):
-    msg(text, "... ", flush=True)
-
-def done():
-    print(Fore.GREEN + "OK" + Style.RESET_ALL)
-
 def pass_pressed():
     return not PASS.input()
 
@@ -206,28 +180,13 @@ def request(text):
     # Wait for any currently pressed button to be released.
     while pass_pressed() or fail_pressed():
         sleep(0.01)
-    print()
-    print(
-        Fore.BLUE + " === Please " + text + " and press " +
-        Fore.GREEN + "PASS" + Fore.BLUE + " or " +
-        Fore.RED + "FAIL" + Fore.BLUE + " === " +
-        Style.RESET_ALL)
-    print()
+    ask(text)
     while True:
         if fail_pressed():
             raise RuntimeError("Test failed at user request")
         elif pass_pressed():
             return
         sleep(0.001)
-
-def fail():
-    print(Fore.RED + "FAIL" + Style.RESET_ALL)
-
-def todo(text):
-    item(Fore.YELLOW + "TODO" + Style.RESET_ALL + ": " + text)
-
-def info(text):
-    return Fore.CYAN + str(text) + Style.RESET_ALL
 
 def begin_short_check(a, b, port):
     begin(f"Checking for {info(a)} to {info(b)} short on {info(port)}")
