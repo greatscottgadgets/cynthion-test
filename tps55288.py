@@ -2,6 +2,10 @@ from greatfet.interfaces.i2c.register_based import I2CRegisterBasedDevice
 
 VREF_L, VREF_H, IOUT_LIMIT, VOUT_SR, VOUT_FS, CDC, MODE, STATUS = range(8)
 
+SCP = 0x80
+OCP = 0x40
+OVP = 0x20
+
 class TPS55288(I2CRegisterBasedDevice):
 
     def __init__(self, gf):
@@ -11,6 +15,7 @@ class TPS55288(I2CRegisterBasedDevice):
         self.write(MODE, 0x20)
 
     def enable(self):
+        self.write(VOUT_SR, 0x11)
         self.write(MODE, 0xA0)
 
     def set_voltage(self, voltage):
@@ -29,3 +34,12 @@ class TPS55288(I2CRegisterBasedDevice):
     def status(self):
         print("Voltage: %.2fV" % self.voltage())
         print("Current: %.1fmA" % (self.current() * 1000))
+
+    def check_fault(self):
+        status = self.read(STATUS)
+        if status & SCP:
+            raise RuntimeError("Short circuit detected")
+        if status & OCP:
+            raise RuntimeError("Overcurrent detected")
+        if status & OVP:
+            raise RuntimeError("Overvoltage detected")

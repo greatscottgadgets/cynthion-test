@@ -336,6 +336,7 @@ def set_boost_supply(voltage, current):
     boost.set_voltage(voltage)
     boost.set_current_limit(current)
     boost.enable()
+    boost.check_fault()
 
 def connect_boost_supply_to(port):
     if port is None:
@@ -351,6 +352,7 @@ def connect_boost_supply_to(port):
         BOOST_VBUS_CON.high()
     if port == 'TARGET-C':
         BOOST_VBUS_TC.high()
+    boost.check_fault()
 
 def mux_select(channel):
     mux, pin = mux_channels[channel]
@@ -987,7 +989,9 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
         set_pin(load_pin, True)
     end()
 
-    sleep(0.1)
+    sleep(0.003)
+
+    boost.check_fault()
 
     if apollo:
         begin("Checking voltage and current on supply port")
