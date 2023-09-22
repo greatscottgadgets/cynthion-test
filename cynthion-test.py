@@ -69,6 +69,7 @@ def test():
     set_boost_supply(5.0, 0.2)
     connect_boost_supply_to('TARGET-C')
     test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+    test_target_a_cable(False)
     disconnect_supply_and_discharge('TARGET-C')
     end()
 
@@ -213,17 +214,15 @@ def test():
     configure_fpga(apollo, 'selftest.bit')
 
     # Request the operator connect a cable to Target-A.
-    # request_target_a_cable()
+    request("connect cable to EUT Target-A port")
 
-    # # Check that the Target-A cable is connected.
-    # set_boost_supply(5.0, 0.2)
-    # connect_boost_supply_to('TARGET-C')
-    # test_voltage('VBUS_TA', 4.95, 5.05)
-    # connect_boost_supply_to(None)
+    # Check that the Target-A cable is connected.
+    set_boost_supply(5.0, 0.2)
+    connect_boost_supply_to('TARGET-C')
+    test_target_a_cable(True)
+    connect_boost_supply_to(None)
 
-    # todo("Test USB FS comms through target passthrough")
-    # #connect_host_to('TARGET-C')
-    # #test_usb_fs()
+    todo("Test USB HS comms through target passthrough")
 
     configure_power_monitor(apollo)
 

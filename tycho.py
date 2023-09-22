@@ -1056,3 +1056,17 @@ def request_control_handoff_to_mcu(handle):
         usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)
     done()
 
+def test_target_a_cable(required):
+    correct = "connected" if required else "disconnected"
+    incorrect = "disconnected" if required else "connected"
+    begin(f"Checking {info('TARGET-A')} cable is {info(correct)}")
+    vmin, vmax = (4.85, 5.05) if required else (0, 0.05)
+    try:
+        test_vbus('TARGET-A', vmin, vmax)
+        success = True
+    except ValueError:
+        success = False
+    end()
+    if not success:
+        raise ValueError(
+            f"TARGET-A cable appears to be {incorrect}, should be {correct}")
