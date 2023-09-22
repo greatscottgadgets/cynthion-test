@@ -14,9 +14,9 @@ def test():
         for port in ('CONTROL', 'AUX', 'TARGET-C'):
             check_cc_resistances(port)
 
-    # Discharge any residual voltage from CONTROL and AUX ports.
+    # Discharge any residual voltage from all ports.
     with group("Discharging ports"):
-        for port in ('CONTROL', 'AUX'):
+        for port in ('CONTROL', 'AUX', 'TARGET-C'):
             with task(f"Discharging {info(port)}"):
                 discharge(port)
 
