@@ -1,6 +1,4 @@
-from time import sleep
-from tycho import *
-from eut import *
+from tests import *
 
 def test():
     # First check for shorts at each EUT USB-C port.
