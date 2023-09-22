@@ -14,6 +14,12 @@ def test():
         for port in ('CONTROL', 'AUX', 'TARGET-C'):
             check_cc_resistances(port)
 
+    # Discharge any residual voltage from CONTROL and AUX ports.
+    with group("Discharging ports"):
+        for port in ('CONTROL', 'AUX'):
+            with task(f"Discharging {info(port)}"):
+                discharge(port)
+
     # Apply power at TARGET-C port.
     with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
         set_boost_supply(5.0, 0.05)

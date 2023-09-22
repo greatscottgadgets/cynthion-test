@@ -278,6 +278,9 @@ def test_pin(pin, level):
 def disconnect_supply_and_discharge(port):
     item(f"Disconnecting supply and discharging {info(port)}")
     boost.disable()
+    discharge(port)
+
+def discharge(port):
     mux_select(vbus_channels[port])
     V_DIV.high()
     V_DIV_MULT.high()
