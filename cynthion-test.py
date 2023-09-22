@@ -198,15 +198,15 @@ def test():
     # Request press of USER button, should be detected by FPGA.
     test_user_button(apollo)
 
-    # Request press of PROGRAM button, should cause Apollo to enumerate.
-    request('press the PROGRAM button')
-    sleep(1)
-    test_apollo_present()
-
     # Request press of RESET button, should cause analyzer to enumerate.
     request('press the RESET button')
     sleep(1)
     test_analyzer_present()
+
+    # Request press of PROGRAM button, should cause Apollo to enumerate.
+    request('press the PROGRAM button')
+    sleep(1)
+    test_apollo_present()
 
     # Power down the EUT.
     with group("Powering off EUT"):
