@@ -67,8 +67,6 @@ def test():
     # Connect host D+/D- to control port.
     connect_host_to('CONTROL')
 
-    sleep(1)
-
     # Check Saturn-V enumerates.
     test_saturnv_present()
 
@@ -78,8 +76,6 @@ def test():
     # Simulate pressing the RESET then PROGRAM buttons.
     simulate_reset_button()
     simulate_program_button()
-
-    sleep(0.7)
 
     # Check Apollo enumerates, and open it.
     apollo = test_apollo_present()
@@ -133,7 +129,6 @@ def test():
     # Request handoff and reconnect to Apollo.
     with group("Switching to Apollo via handoff"):
         request_control_handoff_to_mcu(handle)
-        sleep(0.7)
         apollo = test_apollo_present()
 
     # Flash analyzer bitstream.
@@ -141,13 +136,11 @@ def test():
 
     # Simulate pressing the RESET button, should cause analyzer to enumerate.
     simulate_reset_button()
-    sleep(1)
     test_analyzer_present()
 
     # Trigger handoff by button and reconnect to Apollo.
     with group("Switching to Apollo via button"):
         simulate_program_button()
-        sleep(0.7)
         apollo = test_apollo_present()
 
     # Configure FPGA with test gateware again.
@@ -200,12 +193,10 @@ def test():
 
     # Request press of RESET button, should cause analyzer to enumerate.
     request('press the RESET button')
-    sleep(1)
     test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
     request('press the PROGRAM button')
-    sleep(1)
     test_apollo_present()
 
     # Power down the EUT.

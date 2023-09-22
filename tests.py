@@ -416,7 +416,6 @@ def flash_bitstream(apollo, filename):
         bitstream = open(filename, 'rb').read()
         configure_fpga(apollo, 'flashbridge.bit')
         request_control_handoff_to_fpga(apollo)
-        sleep(1)
         test_bridge_present()
         with task("Connecting to flash bridge"):
             bridge = FlashBridgeConnection()
@@ -516,7 +515,6 @@ def run_self_test(apollo):
 def test_usb_hs(port):
     with group(f"Testing USB HS comms on {info(port)}"):
         connect_host_to(port)
-        sleep(0.8)
 
         pids = {'CONTROL': 0x0001, 'AUX': 0x0002, 'TARGET-C': 0x0003}
 
