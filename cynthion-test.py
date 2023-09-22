@@ -75,9 +75,8 @@ def test():
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
 
-    sleep(0.1)
-
-    # Simulate pressing the PROGRAM button.
+    # Simulate pressing the RESET then PROGRAM buttons.
+    simulate_reset_button()
     simulate_program_button()
 
     sleep(0.7)
