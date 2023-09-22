@@ -10,24 +10,6 @@ def msg(text, end, flush=False):
 def item(text):
     msg(text, "\n")
 
-def begin(text):
-    global indent
-    msg(text, ":\n")
-    indent += 1
-
-def end():
-    global indent
-    indent -= 1
-
-def start(text):
-    msg(text, "... ", flush=True)
-
-def done():
-    print(Fore.GREEN + "OK" + Style.RESET_ALL)
-
-def fail():
-    print(Fore.RED + "FAIL" + Style.RESET_ALL)
-
 def todo(text):
     item(Fore.YELLOW + "TODO" + Style.RESET_ALL + ": " + text)
 
@@ -42,3 +24,29 @@ def ask(text):
         Fore.RED + "FAIL" + Fore.BLUE + " === " +
         Style.RESET_ALL)
     print()
+
+class group():
+    def __init__(self, text):
+        self.text = text
+    def __enter__(self):
+        global indent
+        msg(self.text, ":\n")
+        indent += 1
+        return self
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        global indent
+        indent -= 1
+        return False
+
+class task():
+    def __init__(self, text):
+        self.text = text
+    def __enter__(self):
+        msg(self.text, "... ", flush=True)
+        return self
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        if exc_type is None:
+            print(Fore.GREEN + "OK" + Style.RESET_ALL)
+        else:
+            print(Fore.RED + "FAIL" + Style.RESET_ALL)
+        return False

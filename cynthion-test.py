@@ -2,61 +2,55 @@ from tests import *
 
 def test():
     # First check for shorts at each EUT USB-C port.
-    begin("Checking for shorts on all USB-C ports")
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        check_for_shorts(port)
-    end()
+    with group("Checking for shorts on all USB-C ports"):
+        for port in ('CONTROL', 'AUX', 'TARGET-C'):
+            check_for_shorts(port)
 
     # Connect EUT GND to tester GND.
     connect_grounds()
 
     # Check CC resistances with EUT unpowered.
-    begin("Checking CC resistances with EUT unpowered")
-    for port in ('CONTROL', 'AUX', 'TARGET-C'):
-        check_cc_resistances(port)
-    end()
+    with group("Checking CC resistances with EUT unpowered"):
+        for port in ('CONTROL', 'AUX', 'TARGET-C'):
+            check_cc_resistances(port)
 
     # Apply power at TARGET-C port.
-    begin(f"Testing with VBUS applied to {info('TARGET-C')}")
-    set_boost_supply(5.0, 0.05)
-    connect_boost_supply_to('TARGET-C')
-    test_vbus('TARGET-C', 4.85, 5.05)
+    with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
+        set_boost_supply(5.0, 0.05)
+        connect_boost_supply_to('TARGET-C')
+        test_vbus('TARGET-C', 4.85, 5.05)
 
-    # Check the voltage reaches the EUT's TARGET-A port.
-    test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+        # Check the voltage reaches the EUT's TARGET-A port.
+        test_voltage('TARGET_A_VBUS', 4.85, 5.05)
 
-    # Make sure TARGET-A cable is disconnected.
-    test_target_a_cable(False)
+        # Make sure TARGET-A cable is disconnected.
+        test_target_a_cable(False)
 
-    # Make sure there is no leakage to CONTROL and AUX ports.
-    for port in ('CONTROL', 'AUX'):
-        test_leakage(port)
+        # Make sure there is no leakage to CONTROL and AUX ports.
+        for port in ('CONTROL', 'AUX'):
+            test_leakage(port)
 
-    # Finished testing with supply from TARGET-C.
-    disconnect_supply_and_discharge('TARGET-C')
-    end()
+        # Finished testing with supply from TARGET-C.
+        disconnect_supply_and_discharge('TARGET-C')
 
     # Test supplying VBUS through CONTROL and AUX ports.
     for port in ('CONTROL', 'AUX'):
         test_supply_port(port)
 
     # Supply EUT through CONTROL port for subsequent tests.
-    begin("Powering EUT for testing")
-    set_boost_supply(5.0, 0.2)
-    connect_boost_supply_to('CONTROL')
-    end()
+    with group("Powering EUT for testing"):
+        set_boost_supply(5.0, 0.2)
+        connect_boost_supply_to('CONTROL')
 
     # Check all supply rails come up correctly.
-    begin("Checking all supply voltages")
-    for (testpoint, minimum, maximum) in supplies:
-        test_voltage(testpoint, minimum, maximum)
-    end()
+    with group("Checking all supply voltages"):
+        for (testpoint, minimum, maximum) in supplies:
+            test_voltage(testpoint, minimum, maximum)
 
     # Re-check the CC resistances now that the Type-C controllers have power.
-    begin("Checking CC resistances with EUT powered")
-    for port in ('AUX', 'TARGET-C'):
-        check_cc_resistances(port)
-    end()
+    with group("Checking CC resistances with EUT powered"):
+        for port in ('AUX', 'TARGET-C'):
+            check_cc_resistances(port)
 
     # Check 60MHz clock.
     test_clock()
@@ -98,10 +92,9 @@ def test():
     configure_fpga(apollo, 'selftest.bit')
 
     # Check all PHY supply voltages.
-    begin("Checking all PHY supply voltages")
-    for (testpoint, minimum, maximum) in phy_supplies:
-        test_voltage(testpoint, minimum, maximum)
-    end()
+    with group("Checking all PHY supply voltages"):
+        for (testpoint, minimum, maximum) in phy_supplies:
+            test_voltage(testpoint, minimum, maximum)
 
     # Run self-test routine. Should include:
     #
@@ -117,29 +110,26 @@ def test():
     test_supply_selection(apollo)
 
     # Check that the FPGA can control the CC and SBU lines.
-    begin("Checking FPGA control of CC and SBU lines")
-    for port in ('AUX', 'TARGET-C'):
-        test_cc_sbu_control(apollo, port)
-    end()
+    with group("Checking FPGA control of CC and SBU lines"):
+        for port in ('AUX', 'TARGET-C'):
+            test_cc_sbu_control(apollo, port)
 
     # Run HS speed test.
-    begin("Testing USB HS comms on all ports")
-    configure_fpga(apollo, 'speedtest.bit')
-    request_control_handoff_to_fpga(apollo)
-    for port in ('TARGET-C',):
-        connect_boost_supply_to(port)
-        test_usb_hs(port)
-        disconnect_supply_and_discharge(port)
-    todo(f"Testing USB HS comms on {info('AUX')}")
-    handle = test_usb_hs('CONTROL')
-    end()
+    with group("Testing USB HS comms on all ports"):
+        configure_fpga(apollo, 'speedtest.bit')
+        request_control_handoff_to_fpga(apollo)
+        for port in ('TARGET-C',):
+            connect_boost_supply_to(port)
+            test_usb_hs(port)
+            disconnect_supply_and_discharge(port)
+        todo(f"Testing USB HS comms on {info('AUX')}")
+        handle = test_usb_hs('CONTROL')
 
     # Request handoff and reconnect to Apollo.
-    begin("Switching to Apollo via handoff")
-    request_control_handoff_to_mcu(handle)
-    sleep(0.7)
-    apollo = test_apollo_present()
-    end()
+    with group("Switching to Apollo via handoff"):
+        request_control_handoff_to_mcu(handle)
+        sleep(0.7)
+        apollo = test_apollo_present()
 
     # Flash analyzer bitstream.
     flash_bitstream(apollo, 'analyzer.bit')
@@ -150,11 +140,10 @@ def test():
     test_analyzer_present()
 
     # Trigger handoff by button and reconnect to Apollo.
-    begin("Switching to Apollo via button")
-    simulate_program_button()
-    sleep(0.7)
-    apollo = test_apollo_present()
-    end()
+    with group("Switching to Apollo via button"):
+        simulate_program_button()
+        sleep(0.7)
+        apollo = test_apollo_present()
 
     # Configure FPGA with test gateware again.
     configure_fpga(apollo, 'selftest.bit')
@@ -171,38 +160,35 @@ def test():
     todo("Test USB HS comms through target passthrough")
 
     # Test VBUS distribution at full voltages and currents.
-    begin("Testing VBUS distribution")
-    configure_power_monitor(apollo)
-    for (voltage, load_resistance, load_pin) in (
-            ( 5.0,  1.72, 'TEST_5V' ),
-            (10.0, 38.38, 'TEST_20V')):
-        for passthrough in (False, True):
-            for input_port in ('CONTROL', 'AUX'):
-                test_vbus_distribution(
-                    apollo, voltage, load_resistance,
-                    load_pin, passthrough, input_port)
-    end()
+    with group("Testing VBUS distribution"):
+        configure_power_monitor(apollo)
+        for (voltage, load_resistance, load_pin) in (
+                ( 5.0,  1.72, 'TEST_5V' ),
+                (10.0, 38.38, 'TEST_20V')):
+            for passthrough in (False, True):
+                for input_port in ('CONTROL', 'AUX'):
+                    test_vbus_distribution(
+                        apollo, voltage, load_resistance,
+                        load_pin, passthrough, input_port)
 
     # Test all LEDs.
-    begin("Testing LEDs")
-    test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
-    test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
+    with group("Testing LEDs"):
+        test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
+        test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
 
-    # Turn on all LEDs.
-    begin("Checking visual appearance of LEDs")
-    set_fpga_leds(apollo, 0b111111)
-    set_debug_leds(apollo, 0b11111)
-    set_pin('REF_LED_EN', True)
+        with group("Checking visual appearance of LEDs"):
+            # Turn on all LEDs.
+            set_fpga_leds(apollo, 0b111111)
+            set_debug_leds(apollo, 0b11111)
+            set_pin('REF_LED_EN', True)
 
-    # Ask the user to check the LEDs appear correct.
-    request("check LEDs match reference")
+            # Ask the user to check the LEDs appear correct.
+            request("check LEDs match reference")
 
-    # Turn off LEDs.
-    set_pin('REF_LED_EN', False)
-    set_debug_leds(apollo, 0)
-    set_fpga_leds(apollo, 0)
-    end()
-    end()
+            # Turn off LEDs.
+            set_pin('REF_LED_EN', False)
+            set_debug_leds(apollo, 0)
+            set_fpga_leds(apollo, 0)
 
     # Request press of USER button, should be detected by FPGA.
     test_user_button(apollo)
@@ -218,19 +204,17 @@ def test():
     test_analyzer_present()
 
     # Power down the EUT.
-    begin("Powering off EUT")
-    connect_boost_supply_to(None)
-    connect_host_supply_to(None)
-    end()
+    with group("Powering off EUT"):
+        connect_boost_supply_to(None)
+        connect_host_supply_to(None)
 
     # Repeat VBUS distribution tests for TARGET-C -> TARGET-A with EUT off.
-    begin(f"Testing VBUS distribution with EUT off")
-    for (voltage, load_resistance, load_pin) in (
-            ( 5.0,  1.72, 'TEST_5V' ),
-            (10.0, 38.38, 'TEST_20V')):
-        test_vbus_distribution(
-            None, voltage, load_resistance, load_pin, True, 'TARGET-C')
-    end()
+    with group(f"Testing VBUS distribution with EUT off"):
+        for (voltage, load_resistance, load_pin) in (
+                ( 5.0,  1.72, 'TEST_5V' ),
+                (10.0, 38.38, 'TEST_20V')):
+            test_vbus_distribution(
+                None, voltage, load_resistance, load_pin, True, 'TARGET-C')
 
 if __name__ == "__main__":
     try:
