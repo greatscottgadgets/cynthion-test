@@ -968,6 +968,25 @@ def test_supply_selection(apollo):
 
     end()
 
+def test_cc_sbu_control(apollo, port):
+    begin(f"Checking control of {info(port)} CC lines")
+    begin_cc_measurement(port)
+    for levels in ((0, 1), (1, 0)):
+        set_cc_levels(apollo, port, levels)
+        for pin, level in zip(('CC1', 'CC2'), levels):
+            if level:
+                check_cc_resistance(pin, 4.1, 6.1)
+            else:
+                check_cc_resistance(pin, 50, 200)
+    end()
+    begin(f"Checking control of {info(port)} SBU lines")
+    for levels in ((0, 1), (1, 0)):
+        set_sbu_levels(apollo, port, levels)
+        test_pin('SBU1_test', levels[0])
+        test_pin('SBU2_test', levels[1])
+    end()
+    end_cc_measurement()
+
 def test_vbus_distribution(apollo, voltage, load_resistance,
         load_pin, passthrough, input_port):
     vmin_off = 0.0
