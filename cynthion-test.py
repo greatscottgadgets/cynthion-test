@@ -122,11 +122,10 @@ def test():
     with group("Testing USB HS comms on all ports"):
         configure_fpga(apollo, 'speedtest.bit')
         request_control_handoff_to_fpga(apollo)
-        for port in ('TARGET-C',):
+        for port in ('TARGET-C', 'AUX'):
             connect_boost_supply_to(port)
             test_usb_hs(port)
             disconnect_supply_and_discharge(port)
-        todo(f"Testing USB HS comms on {info('AUX')}")
         handle = test_usb_hs('CONTROL')
 
     # Request handoff and reconnect to Apollo.
