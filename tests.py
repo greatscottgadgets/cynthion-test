@@ -240,25 +240,27 @@ def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
         item(message + Fore.GREEN + result)
     return value
 
-def measure_voltage(channel, minimum, maximum):
-    if maximum <= 6.6:
-        V_DIV.high()
-        V_DIV_MULT.low()
-        scale = 3.3 / 1024 * 2
-    else:
-        V_DIV.low()
-        V_DIV_MULT.high()
-        scale = 3.3 / 1024 * (30 + 5.1) / 5.1
-
-    mux_select(channel)
+def measure_voltage(pulldown):
+    pullup = 30
+    scale = 3.3 / 1024 * (pulldown + pullup) / pulldown
     samples = gf.adc.read_samples(1000)
-    mux_disconnect()
     voltage = scale * sum(samples) / len(samples)
-
     return voltage
 
 def test_voltage(channel, minimum, maximum):
-    voltage = measure_voltage(channel, minimum, maximum)
+    if maximum <= 6.6:
+        V_DIV.high()
+        V_DIV_MULT.low()
+        pulldown = 30
+    else:
+        V_DIV.low()
+        V_DIV_MULT.high()
+        pulldown = 5.1
+    mux_select(channel)
+    voltage = measure_voltage(pulldown)
+    mux_disconnect()
+    V_DIV.low()
+    V_DIV_MULT.low()
     return test_value("voltage", channel, voltage, 'V', minimum, maximum)
 
 def set_pin(pin, level):
@@ -291,7 +293,8 @@ def discharge(port):
     mux_select(channel)
     V_DIV.high()
     V_DIV_MULT.high()
-    while measure_voltage(channel, 0, 5) > 0.1:
+    pulldown = (5.1 * 30) / (5.1 + 30)
+    while measure_voltage(pulldown) > 0.1:
         sleep(0.05)
     V_DIV.low()
     V_DIV_MULT.low()
