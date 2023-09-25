@@ -70,6 +70,9 @@ def test():
     # Check Saturn-V enumerates.
     test_saturnv_present()
 
+    # Wait a moment before starting DFU.
+    sleep(0.5)
+
     # Flash Apollo firmware to MCU via DFU.
     flash_firmware()
 
