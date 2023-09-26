@@ -71,6 +71,9 @@ REGISTER_TARGET_SBU = 32
 
 REGISTER_BUTTON_USER = 33
 
+REGISTER_PMOD_A_OUT = 34
+REGISTER_PMOD_B_IN = 35
+
 
 class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
     """ Hardware meant to demonstrate use of the Debug Controller's register interface.
@@ -212,6 +215,13 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             m.d.usb += button_pressed.eq(False)
         with m.Elif(button_input):
             m.d.usb += button_pressed.eq(True)
+
+        # PMOD test registers.
+        pmod_out = platform.request("user_pmod", 0, dir='o')
+        pmod_in = platform.request("user_pmod", 1, dir='i')
+        pmod_out_reg = registers.add_register(REGISTER_PMOD_A_OUT, size=8)
+        m.d.comb += pmod_out.eq(pmod_out_reg)
+        registers.add_sfr(REGISTER_PMOD_B_IN, read=pmod_in)
 
         return m
 

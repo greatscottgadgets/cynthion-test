@@ -4,7 +4,8 @@ from selftest import InteractiveSelftest, \
     REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
     REGISTER_PWR_MON_ADDR, REGISTER_PWR_MON_VALUE, \
     REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
-    REGISTER_AUX_SBU, REGISTER_TARGET_SBU, REGISTER_BUTTON_USER
+    REGISTER_AUX_SBU, REGISTER_TARGET_SBU, REGISTER_BUTTON_USER, \
+    REGISTER_PMOD_A_OUT, REGISTER_PMOD_B_IN
 from luna.gateware.applets.flash_bridge import FlashBridgeConnection
 from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
@@ -514,6 +515,15 @@ def run_self_test(apollo):
                     method(apollo)
                 except Exception as e:
                     raise RuntimeError(f"{description} self-test failed")
+        with task("PMOD I/O"):
+            for value in (0x00, 0xFF, 0xAA, 0x55):
+                write_register(apollo, REGISTER_PMOD_A_OUT, value)
+                readback = read_register(apollo, REGISTER_PMOD_B_IN)
+                if readback != value:
+                    raise ValueError(
+                        f"Wrote 0x{value:02X} to PMOD A "
+                        f"but read back 0x{readback:02X} from PMOD B")
+
 
 def test_usb_hs(port):
     if port == 'AUX':
