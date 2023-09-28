@@ -13,7 +13,6 @@ from formatting import *
 from tycho import *
 from eut import *
 from time import time, sleep
-import numpy as np
 import usb1
 import os
 
@@ -739,7 +738,7 @@ def test_supply_port(supply_port):
         test_vbus(supply_port, 4.85, 5.1)
 
         # Ramp the supply in 50mV steps up to 6.25V.
-        for voltage in np.arange(5.0, 6.25, 0.05):
+        for voltage in (mv / 1000 for mv in range(5000, 6250, 50)):
             with group(
                     f"Testing with {info(f'{voltage:.2f} V'):} supply "
                     f"on {info(supply_port)}"):
