@@ -1,4 +1,6 @@
 from tests import *
+import ipdb
+import sys
 
 def test():
     # First check for shorts at each EUT USB-C port.
@@ -222,4 +224,6 @@ if __name__ == "__main__":
         fail("Test stopped by user")
     except Exception as e:
         fail(str(e))
+        if 'debug' in sys.argv[1:]:
+            ipdb.post_mortem()
     reset()

@@ -9,6 +9,9 @@ all: $(TIMESTAMP)
 test: $(TIMESTAMP)
 	$(ENV_PYTHON) cynthion-test.py
 
+debug: $(TIMESTAMP)
+	$(ENV_PYTHON) cynthion-test.py debug
+
 bitstreams: analyzer.bit flashbridge.bit selftest.bit speedtest.bit
 
 analyzer.bit: $(ANALYZER)/top.py $(ANALYZER)/analyzer.py $(TIMESTAMP)
@@ -30,7 +33,7 @@ $(TIMESTAMP): environment
 	$(ENV_INSTALL) dependencies/python-usb-protocol
 	$(ENV_INSTALL) --no-deps dependencies/luna
 	$(ENV_INSTALL) dependencies/cynthion/host
-	$(ENV_INSTALL) libusb1==1.9.2 colorama
+	$(ENV_INSTALL) libusb1==1.9.2 colorama ipdb
 	rm -rf dependencies/amaranth-stdio/build
 	touch $(TIMESTAMP)
 
