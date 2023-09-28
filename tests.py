@@ -14,7 +14,6 @@ from tycho import *
 from eut import *
 from time import time, sleep
 import numpy as np
-import inspect
 import usb1
 import os
 
