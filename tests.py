@@ -323,7 +323,7 @@ def flash_bootloader():
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
-        run_command('dfu-util -a 0 -d 1d50:615c -D luna_d11-firmware.bin')
+        run_command('dfu-util -a 0 -d 1d50:615c -D firmware.bin')
 
 def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
