@@ -115,7 +115,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
 
         # LED test register.
         led_reg = registers.add_register(REGISTER_LEDS, size=6, name="leds", reset=0)
-        led_out   = Cat([platform.request("led", i, dir="o") for i in range(0, 6)])
+        led_out   = Cat([platform.request("led", i, dir="o").o for i in range(0, 6)])
         m.d.comb += led_out.eq(led_reg)
 
         # VBUS enable registers.
@@ -127,11 +127,11 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
         tc_thru_reg = registers.add_register(REGISTER_PASS_TARGET_C, size=1, reset=True)
 
         m.d.comb += [
-            platform.request("control_vbus_in_en", 0, dir="o").eq(con_vbus_reg),
-            platform.request("aux_vbus_in_en", 0, dir="o").eq(aux_vbus_reg),
-            platform.request("control_vbus_en", 0, dir="o").eq(con_thru_reg),
-            platform.request("aux_vbus_en", 0, dir="o").eq(aux_thru_reg),
-            platform.request("target_c_vbus_en", 0, dir="o").eq(tc_thru_reg),
+            platform.request("control_vbus_in_en", 0, dir="o").o.eq(con_vbus_reg),
+            platform.request("aux_vbus_in_en", 0, dir="o").o.eq(aux_vbus_reg),
+            platform.request("control_vbus_en", 0, dir="o").o.eq(con_thru_reg),
+            platform.request("aux_vbus_en", 0, dir="o").o.eq(aux_thru_reg),
+            platform.request("target_c_vbus_en", 0, dir="o").o.eq(tc_thru_reg),
         ]
 
         #
@@ -165,7 +165,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
 
         # Hook up our PSRAM.
         m.d.comb += [
-            ram_bus.reset          .eq(0),
+            ram_bus.reset.o        .eq(0),
             psram.single_page      .eq(0),
             psram.perform_write    .eq(0),
             psram.register_space   .eq(1),
@@ -203,7 +203,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
         ]
 
         # User button register.
-        button_input = platform.request("button_user")
+        button_input = platform.request("button_user").i
         button_pressed = Signal()
         button_reset = Signal()
         registers.add_sfr(
@@ -217,8 +217,8 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             m.d.usb += button_pressed.eq(True)
 
         # PMOD test registers.
-        pmod_out = platform.request("user_pmod", 0, dir='o')
-        pmod_in = platform.request("user_pmod", 1, dir='i')
+        pmod_out = platform.request("user_pmod", 0, dir='o').o
+        pmod_in = platform.request("user_pmod", 1, dir='i').i
         pmod_out_reg = registers.add_register(REGISTER_PMOD_A_OUT, size=8)
         m.d.comb += pmod_out.eq(pmod_out_reg)
         registers.add_sfr(REGISTER_PMOD_B_IN, read=pmod_in)
@@ -239,9 +239,9 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             ulpi_reg_window.ulpi_dir      .eq(target_ulpi.dir.i),
             ulpi_reg_window.ulpi_next     .eq(target_ulpi.nxt.i),
 
-            target_ulpi.clk      .eq(ClockSignal("usb")),
-            target_ulpi.rst      .eq(ResetSignal("usb")),
-            target_ulpi.stp      .eq(ulpi_reg_window.ulpi_stop),
+            target_ulpi.clk.o    .eq(ClockSignal("usb")),
+            target_ulpi.rst.o    .eq(ResetSignal("usb")),
+            target_ulpi.stp.o    .eq(ulpi_reg_window.ulpi_stop),
             target_ulpi.data.o   .eq(ulpi_reg_window.ulpi_data_out),
             target_ulpi.data.oe  .eq(~target_ulpi.dir.i)
         ]

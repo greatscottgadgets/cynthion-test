@@ -1,6 +1,6 @@
 [submodule "dependencies/amaranth"]
 	path = dependencies/amaranth
-	url = https://github.com/martinling/amaranth
+	url = https://github.com/amaranth-lang/amaranth
 [submodule "dependencies/luna"]
 	path = dependencies/luna
 	url = https://github.com/martinling/luna
