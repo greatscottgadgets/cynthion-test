@@ -6,8 +6,10 @@ ENV_INSTALL=environment/bin/pip install
 TIMESTAMP=environment/timestamp
 PLATFORM=cynthion.gateware.platform:CynthionPlatformRev$(MAJOR)D$(MINOR)
 ANALYZER=dependencies/cynthion/gateware/analyzer
-APOLLO_VARS=APOLLO_BOARD=cynthion BOARD_REVISION_MAJOR=$(MAJOR) BOARD_REVISION_MINOR=$(MINOR)
+BOARD_VARS=BOARD_REVISION_MAJOR=$(MAJOR) BOARD_REVISION_MINOR=$(MINOR)
+APOLLO_VARS=APOLLO_BOARD=cynthion $(BOARD_VARS)
 FIRMWARE=dependencies/apollo/firmware/_build/cynthion_d11/firmware.bin
+BOOTLOADER=dependencies/saturn-v/bootloader.elf
 
 all: $(TIMESTAMP)
 
@@ -16,6 +18,14 @@ test: $(TIMESTAMP)
 
 debug: $(TIMESTAMP)
 	$(ENV_PYTHON) cynthion-test.py debug
+
+bootloader: bootloader.elf
+
+bootloader.elf: $(BOOTLOADER)
+	cp $< $@
+
+$(BOOTLOADER):
+	$(BOARD_VARS) make -C dependencies/saturn-v
 
 firmware: firmware.bin
 
@@ -53,4 +63,6 @@ $(TIMESTAMP): environment
 
 clean:
 	$(APOLLO_VARS) make -C dependencies/apollo/firmware clean
+	make -C dependencies/saturn-v clean
+	rm -f $(BOOTLOADER)
 	rm -rf environment

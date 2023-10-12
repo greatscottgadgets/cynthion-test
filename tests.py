@@ -329,7 +329,7 @@ def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
         return find_device(0x1d50, 0x615c,
                            "Great Scott Gadgets",
-                           "LUNA Saturn-V RCM Bootloader")
+                           "Saturn-V")
 
 def test_apollo_present():
     with group(f"Checking for Apollo"):
