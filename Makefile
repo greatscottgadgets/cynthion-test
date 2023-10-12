@@ -1,8 +1,13 @@
+MAJOR ?= 1
+MINOR ?= 2
+
 ENV_PYTHON=environment/bin/python
 ENV_INSTALL=environment/bin/pip install
 TIMESTAMP=environment/timestamp
-PLATFORM=cynthion.gateware.platform:CynthionPlatformRev1D2
+PLATFORM=cynthion.gateware.platform:CynthionPlatformRev$(MAJOR)D$(MINOR)
 ANALYZER=dependencies/cynthion/gateware/analyzer
+APOLLO_VARS=APOLLO_BOARD=cynthion BOARD_REVISION_MAJOR=$(MAJOR) BOARD_REVISION_MINOR=$(MINOR)
+FIRMWARE=dependencies/apollo/firmware/_build/cynthion_d11/firmware.bin
 
 all: $(TIMESTAMP)
 
@@ -11,6 +16,15 @@ test: $(TIMESTAMP)
 
 debug: $(TIMESTAMP)
 	$(ENV_PYTHON) cynthion-test.py debug
+
+firmware: firmware.bin
+
+firmware.bin: $(FIRMWARE)
+	cp $< $@
+
+$(FIRMWARE):
+	$(APOLLO_VARS) make -C dependencies/apollo/firmware get-deps
+	$(APOLLO_VARS) make -C dependencies/apollo/firmware
 
 bitstreams: analyzer.bit flashbridge.bit selftest.bit speedtest.bit
 
@@ -38,4 +52,5 @@ $(TIMESTAMP): environment
 	touch $(TIMESTAMP)
 
 clean:
+	$(APOLLO_VARS) make -C dependencies/apollo/firmware clean
 	rm -rf environment
