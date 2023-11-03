@@ -187,12 +187,16 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
             dev_address=0b0100010,  # FUSB302BMPX slave address
             register_base=REGISTER_AUX_TYPEC_CTL_ADDR
         )
-        self.add_i2c_registers(m, platform,
+        power_mon = self.add_i2c_registers(m, platform,
             i2c_bus="power_monitor",
             dev_address=0b0010000,  # PAC195X slave address when ADDRSEL tied to GND
             register_base=REGISTER_PWR_MON_ADDR,
             data_bytes=2
         )
+        m.d.comb += [
+            power_mon.slow.o.eq(1),
+            power_mon.pwrdn.o.eq(0),
+        ]
 
         # SBU control registers.
         aux_sbu_reg = registers.add_register(REGISTER_AUX_SBU, size=2, reset=0)
@@ -275,7 +279,7 @@ class InteractiveSelftest(Elaboratable, ApolloSelfTestCase):
     def add_i2c_registers(self, m, platform, *, i2c_bus, dev_address, register_base, data_bytes=1):
         """ Adds a set of I2C registers to the active design. """
 
-        target_i2c = platform.request(i2c_bus, dir={'sbu1': 'o', 'sbu2': 'o'})
+        target_i2c = platform.request(i2c_bus, dir={'sbu1': 'o', 'sbu2': 'o', 'slow': 'o', 'pwrdn': 'o'})
         i2c_if     = I2CRegisterInterface(pads=target_i2c, period_cyc=300, address=dev_address, data_bytes=data_bytes)
         m.submodules += i2c_if
 
