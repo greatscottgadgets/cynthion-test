@@ -47,7 +47,7 @@ def test():
 
     # Supply EUT through CONTROL port for subsequent tests.
     with group("Powering EUT for testing"):
-        set_boost_supply(5.0, 0.2)
+        set_boost_supply(5.0, 0.25)
         connect_boost_supply_to('CONTROL')
 
     # Check all supply rails come up correctly.
@@ -154,7 +154,7 @@ def test():
     request("connect cable to EUT Target-A port")
 
     # Check that the Target-A cable is connected.
-    set_boost_supply(5.0, 0.2)
+    set_boost_supply(5.0, 0.25)
     connect_boost_supply_to('TARGET-C')
     test_target_a_cable(True)
     connect_boost_supply_to(None)

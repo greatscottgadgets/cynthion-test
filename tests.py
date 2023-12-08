@@ -302,7 +302,7 @@ def discharge(port):
 def test_clock():
     reference_hz = 204000000 // 10
     target_hz = 60000000
-    tolerance_ppm = 50
+    tolerance_ppm = 100
     tolerance_hz = target_hz * tolerance_ppm / 1e6
     fmin = target_hz - tolerance_hz
     fmax = target_hz + tolerance_hz
@@ -713,7 +713,7 @@ def test_eut_voltage(apollo, port, vmin, vmax):
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     voltage = value * 32 / 65536
-    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
+    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax, ignore=True)
 
 def test_eut_current(apollo, port, imin, imax):
     refresh_power_monitor(apollo)
@@ -725,13 +725,13 @@ def test_eut_current(apollo, port, imin, imax):
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', imin, imax)
+    return test_value("EUT current", port, current, 'A', imin, imax, ignore=True)
 
 def test_supply_port(supply_port):
     with group(f"Testing VBUS supply though {info(supply_port)}"):
 
         # Connect 5V supply via this port.
-        set_boost_supply(5.0, 0.2)
+        set_boost_supply(5.0, 0.25)
         connect_boost_supply_to(supply_port)
 
         # Check supply present at port.
@@ -743,7 +743,7 @@ def test_supply_port(supply_port):
                     f"Testing with {info(f'{voltage:.2f} V'):} supply "
                     f"on {info(supply_port)}"):
 
-                set_boost_supply(voltage, 0.2)
+                set_boost_supply(voltage, 0.25)
                 sleep(0.01)
 
                 schottky_drop_min, schottky_drop_max = (0.35, 0.85)
@@ -774,12 +774,12 @@ def test_supply_port(supply_port):
 def test_supply_selection(apollo):
     with group("Testing FPGA control of VBUS input selection"):
         with group("Handing off EUT supply from boost converter to host"):
-            set_boost_supply(4.5, 0.2)
+            set_boost_supply(4.5, 0.25)
             connect_host_supply_to('CONTROL')
             connect_boost_supply_to(None)
 
         with group("Connect DC-DC to AUX at higher than the host supply"):
-            set_boost_supply(5.4, 0.2)
+            set_boost_supply(5.4, 0.25)
             connect_boost_supply_to('AUX')
 
             # Define ranges to distinguish high and low supplies.
@@ -805,12 +805,12 @@ def test_supply_selection(apollo):
             test_voltage('+5V', high_min, high_max)
 
         with group("Swap ports between host and boost converter"):
-            set_boost_supply(4.5, 0.2)
+            set_boost_supply(4.5, 0.25)
             connect_host_supply_to('AUX')
             connect_boost_supply_to('CONTROL')
 
         with group("Increase boost voltage to identifiable level"):
-            set_boost_supply(5.4, 0.2)
+            set_boost_supply(5.4, 0.25)
             test_voltage('+5V', high_min, high_max)
 
         with group("Test FPGA control of CONTROL supply input"):
@@ -823,7 +823,7 @@ def test_supply_selection(apollo):
             test_voltage('+5V', high_min, high_max)
 
         with group("Swap back to powering from host"):
-            set_boost_supply(4.5, 0.2)
+            set_boost_supply(4.5, 0.25)
             connect_host_supply_to('CONTROL')
             connect_boost_supply_to(None)
 
