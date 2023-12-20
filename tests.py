@@ -107,11 +107,20 @@ def check_for_shorts(port):
             test_voltage('CC1_test', 0.0, 0.1)
             set_pin('SBU2_test', None)
 
-        todo("CC1/D- short check")
+        with short_check('CC1', 'D-', port):
+            set_pin('CC1_test', True),
+            test_voltage('D_TEST_MINUS', 0.0, 0.1)
+            set_pin('CC1_test', None),
 
-        todo("D-/D+ short check")
+        with short_check('D-', 'D+', port):
+            set_pin('D_TEST_MINUS', True),
+            test_voltage('D_TEST_PLUS', 0.0, 0.1)
+            set_pin('D_TEST_MINUS', None),
 
-        todo("D+/SBU1 short check")
+        with short_check('D+', 'SBU1', port):
+            set_pin('SBU1_test', True)
+            test_voltage('D_TEST_PLUS', 0.0, 0.1)
+            set_pin('SBU1_test', None)
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
@@ -124,13 +133,19 @@ def check_for_shorts(port):
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
+        connect_tester_to(None)
 
 def connect_grounds():
     item("Connecting EUT ground to Tycho ground")
     GND_EN.high()
 
 def connect_tester_to(port):
-    todo(f"Connecting tester D+/D- to {info(port)}")
+    item(f"Connecting tester D+/D- to {info(port)}")
+    D_OEn_1.high()
+    D_S_1.set_state(1)
+    if port is None:
+        return
+    D_OEn_1.low()
 
 def connect_host_to(port):
     item(f"Connecting host D+/D- to {info(port)}")
