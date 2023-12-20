@@ -135,27 +135,23 @@ def connect_tester_to(port):
 def connect_host_to(port):
     item(f"Connecting host D+/D- to {info(port)}")
     D_OEn_1.high()
-    D_OEn_2.high()
-    D_OEn_3.high()
+    D_S_1.set_state(0)
+    indices = {None: 0, 'TARGET-C': 1, 'AUX': 2, 'CONTROL': 3}
+    index = indices[port]
+    D_C0.set_state((index & 1) != 0)
+    D_C1.set_state((index & 2) != 0)
     if port is None:
         return
-    D_S_1.set_state(0)
-    D_S_2.set_state(port != 'CONTROL')
-    D_S_3.set_state(port == 'TARGET-C')
     D_OEn_1.low()
-    D_OEn_2.low()
-    D_OEn_3.low()
 
 def begin_cc_measurement(port):
     connect_tester_cc_sbu_to(port)
-    V_DIV.low()
-    V_DIV_MULT.low()
-    CC_PULL_UP.low()
+    V_DIV.high()
     CC1_test.input()
     CC2_test.input()
 
 def end_cc_measurement():
-    CC_PULL_UP.high()
+    V_DIV.low()
     connect_tester_cc_sbu_to(None)
 
 def check_cc_resistances(port):
@@ -172,7 +168,7 @@ def check_cc_resistance(pin, minimum, maximum):
     mux_disconnect()
     voltage = (3.3 / 1024) * sum(samples) / len(samples)
     item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
-    resistance = (3.3 * 30 - voltage * 35.1) / (voltage - 3.3)
+    resistance = - (voltage * 5.1) / (voltage - 3.3)
     return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum, ignore=True)
 
 def test_leakage(port):
@@ -240,26 +236,23 @@ def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
     return value
 
 def measure_voltage(pulldown):
-    pullup = 30
+    pullup = 100
     scale = 3.3 / 1024 * (pulldown + pullup) / pulldown
     samples = gf.adc.read_samples(1000)
     voltage = scale * sum(samples) / len(samples)
     return voltage
 
 def test_voltage(channel, minimum, maximum):
+    V_DIV.low()
     if maximum <= 6.6:
-        V_DIV.high()
         V_DIV_MULT.low()
-        pulldown = 30
+        pulldown = 100
     else:
-        V_DIV.low()
         V_DIV_MULT.high()
-        pulldown = 5.1
+        pulldown = (100 * 42.2) / (100 + 42.2)
     mux_select(channel)
     voltage = measure_voltage(pulldown)
     mux_disconnect()
-    V_DIV.low()
-    V_DIV_MULT.low()
     return test_value("voltage", channel, voltage, 'V', minimum, maximum)
 
 def set_pin(pin, level):
@@ -289,15 +282,15 @@ def disconnect_supply_and_discharge(port):
 
 def discharge(port):
     channel = vbus_channels[port]
-    mux_select(channel)
-    V_DIV.high()
-    V_DIV_MULT.high()
-    pulldown = (5.1 * 30) / (5.1 + 30)
-    while measure_voltage(pulldown) > 0.1:
-        sleep(0.05)
     V_DIV.low()
     V_DIV_MULT.low()
+    DISCHARGE.high()
+    mux_select(channel)
+    pulldown = 100
+    while measure_voltage(pulldown) > 0.1:
+        sleep(0.05)
     mux_disconnect()
+    DISCHARGE.low()
 
 def test_clock():
     reference_hz = 204000000 // 10

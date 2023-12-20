@@ -2,19 +2,16 @@ from greatfet import GreatFET
 from tps55288 import TPS55288
 
 gpio_allocations = dict(
-    BOOST_EN = ('J2_P25', 0),
+    BOOST_EN = ('J2_P27', 0),
     BOOST_VBUS_AUX = ('J2_P16', 0),
     BOOST_VBUS_CON = ('J2_P15', 0),
     BOOST_VBUS_TC = ('J2_P34', 0),
     CC1_test = ('J1_P17', None),
     CC2_test = ('J1_P18', None),
-    CC_PULL_UP = ('J1_P7', 1),
-    D_S_1 = ('J1_P3', 0),
-    D_S_2 = ('J1_P19', 0),
-    D_S_3 = ('J1_P26', 0),
-    D_OEn_1 = ('J1_P4', 1),
-    D_OEn_2 = ('J1_P20', 1),
-    D_OEn_3 = ('J1_P28', 1),
+    D_S_1 = ('J1_P4', 0),
+    D_C0 = ('J1_P19', 0),
+    D_C1 = ('J1_P20', 0),
+    D_OEn_1 = ('J1_P3', 1),
     GND_EN = ('J2_P31', 0),
     GND_EUT = ('J2_P33', None),
     SBU1_test = ('J1_P30', None),
@@ -34,19 +31,20 @@ gpio_allocations = dict(
     MUX2_A1 = ('J1_P21', 0),
     MUX2_A2 = ('J1_P22', 0),
     MUX2_A3 = ('J1_P25', 0),
-    TEST_5V = ('J1_P37', 0),
-    TEST_20V = ('J1_P33', 0),
-    TA_DIS = ('J1_P34', 1),
+    TEST_5V = ('J1_P40', 0),
+    TEST_20V = ('J1_P39', 0),
+    DISCHARGE = ('J1_P34', 0),
     HOST_VBUS_CON = ('J2_P13', 0),
     HOST_VBUS_AUX = ('J2_P14', 0),
     SIG1_OEn = ('J2_P24', 1),
-    SIG2_OEn = ('J2_P22', 1),
+    SIG2_OEn = ('J2_P19', 1),
     SIG1_S = ('J2_P23', 0),
-    SIG2_S = ('J2_P27', 0),
+    SIG2_S = ('J2_P25', 0),
     nBTN_PROGRAM = ('J1_P27', None),
     nBTN_RESET = ('J1_P29', None),
     PASS = ('J2_P35', None),
     FAIL = ('J2_P36', None),
+    FX2_EN = ('J1_P37', 0),
 )
 
 mux_channels = {
@@ -80,8 +78,8 @@ mux_channels = {
     'D13_Vf': (0, 5),
     'D14_Vf': (0, 15),
     'CDC': (1, 15),
-    'SPARE1': (1, 13),
-    'SPARE2': (1, 14),
+    'D_TEST_PLUS': (1, 14),
+    'D_TEST_MINUS': (1, 13),
 }
 
 vbus_channels = {
