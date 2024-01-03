@@ -20,6 +20,8 @@ context = usb1.USBContext()
 last_bus = None
 last_addr = None
 
+boost_port = None
+
 vbus_registers = {
     'CONTROL': REGISTER_CON_VBUS_EN,
     'AUX':     REGISTER_AUX_VBUS_EN,
@@ -212,6 +214,21 @@ def connect_boost_supply_to(port):
     if port == 'TARGET-C':
         BOOST_VBUS_TC.high()
     boost.check_fault()
+    global boost_port
+    boost_port = port
+
+def test_boost_current(minimum, maximum):
+    V_DIV.low()
+    V_DIV_MULT.low()
+    pulldown = 100
+    mux_select('CDC')
+    cdc_voltage = measure_voltage(pulldown)
+    mux_disconnect()
+    shunt_voltage = cdc_voltage * 0.05
+    shunt_resistance = 0.01
+    shunt_current = max(shunt_voltage / shunt_resistance - 0.06, 0)
+    channel = vbus_channels[boost_port]
+    return test_value("current", channel, shunt_current, 'A', minimum, maximum)
 
 def mux_select(channel):
     mux, pin = mux_channels[channel]
@@ -745,6 +762,7 @@ def test_supply_port(supply_port):
 
         # Check supply present at port.
         test_vbus(supply_port, 4.85, 5.1)
+        test_boost_current(0, 0.1)
 
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in (mv / 1000 for mv in range(5000, 6250, 50)):
@@ -929,6 +947,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
             with group("Checking voltages and positive current on input"):
                 test_vbus(input_port, vmin_sp, vmax_sp)
+                test_boost_current(imin_on, imax_on)
                 test_eut_voltage(apollo, input_port, vmin_ip, vmax_ip)
                 test_eut_current(apollo, input_port, imin_on, imax_on)
 

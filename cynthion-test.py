@@ -27,6 +27,7 @@ def test():
         set_boost_supply(5.0, 0.05)
         connect_boost_supply_to('TARGET-C')
         test_vbus('TARGET-C', 4.85, 5.05)
+        test_boost_current(0, 0.1)
 
         # Check the voltage reaches the EUT's TARGET-A port.
         test_voltage('TARGET_A_VBUS', 4.85, 5.05)
@@ -54,6 +55,9 @@ def test():
     with group("Checking all supply voltages"):
         for (testpoint, minimum, maximum) in supplies:
             test_voltage(testpoint, minimum, maximum)
+
+    # Check supply current.
+    test_boost_current(0, 0.1)
 
     # Re-check the CC resistances now that the Type-C controllers have power.
     with group("Checking CC resistances with EUT powered"):
