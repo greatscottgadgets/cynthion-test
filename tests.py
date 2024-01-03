@@ -259,11 +259,11 @@ def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
     if value < minimum:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too low on {src}: {value:.2f} {unit}, minimum was {minimum:.2f} {unit}")
+            raise ValueError(f"{qty} too low on {src}: {value:.3f} {unit}, minimum was {minimum:.2f} {unit}")
     elif value > maximum:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too high on {src}: {value:.2f} {unit}, maximum was {maximum:.2f} {unit}")
+            raise ValueError(f"{qty} too high on {src}: {value:.3f} {unit}, maximum was {maximum:.2f} {unit}")
     else:
         item(message + Fore.GREEN + result)
     return value
