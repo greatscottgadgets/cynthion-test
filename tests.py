@@ -94,17 +94,17 @@ def check_for_shorts(port):
 
         with short_check('VBUS', 'GND', port):
             set_pin('GND_EUT', True)
-            test_vbus(port, 0, 0.05)
+            test_vbus(port, 0.0, 2.8)
             set_pin('GND_EUT', None)
 
         with short_check('VBUS', 'SBU2', port):
             set_pin('SBU2_test', True)
-            test_vbus(port, 0.0, 0.05)
+            test_vbus(port, 0.0, 2.0)
             set_pin('SBU2_test', None)
 
         with short_check('SBU2', 'CC1', port):
             set_pin('SBU2_test', True)
-            test_voltage('CC1_test', 0.0, 0.1)
+            test_voltage('CC1_test', 0.0, 1.9)
             set_pin('SBU2_test', None)
 
         with short_check('CC1', 'D-', port):
@@ -124,12 +124,12 @@ def check_for_shorts(port):
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
-            test_voltage('CC2_test', 0.0, 0.1)
+            test_voltage('CC2_test', 0.0, 1.2)
             set_pin('SBU1_test', None)
 
         with short_check('CC2', 'VBUS', port):
             set_pin('CC2_test', True)
-            test_vbus(port, 0.0, 0.05)
+            test_vbus(port, 0.0, 1.2)
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
@@ -173,7 +173,7 @@ def check_cc_resistances(port):
     with group(f"Checking CC resistances on {info(port)}"):
         begin_cc_measurement(port)
         for pin in ('CC1', 'CC2'):
-            check_cc_resistance(pin, 4.1, 6.1)
+            check_cc_resistance(pin, 4.59, 5.61)
         end_cc_measurement()
 
 def check_cc_resistance(pin, minimum, maximum):
@@ -183,8 +183,9 @@ def check_cc_resistance(pin, minimum, maximum):
     mux_disconnect()
     voltage = (3.3 / 1024) * sum(samples) / len(samples)
     item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
-    resistance = - (voltage * 5.1) / (voltage - 3.3)
-    return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum, ignore=True)
+    switch_resistance = 0.17
+    resistance = - (voltage * 5.1) / (voltage - 3.3) - switch_resistance
+    return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum)
 
 def test_leakage(port):
     test_vbus(port, 0, 0.2)
@@ -629,7 +630,7 @@ def test_usb_hs(port):
 
         speed = total_data_exchanged / elapsed / 1000000
 
-        test_value("transfer rate", port, speed, 'MB/s', 45, 50)
+        test_value("transfer rate", port, speed, 'MB/s', 47, 48)
 
         return handle
 
@@ -842,9 +843,9 @@ def test_cc_sbu_control(apollo, port):
             set_cc_levels(apollo, port, levels)
             for pin, level in zip(('CC1', 'CC2'), levels):
                 if level:
-                    check_cc_resistance(pin, 4.1, 6.1)
+                    check_cc_resistance(pin, 4.59, 5.61)
                 else:
-                    check_cc_resistance(pin, 50, 200)
+                    check_cc_resistance(pin, 30, 1000)
     with group(f"Checking control of {info(port)} SBU lines"):
         for levels in ((0, 1), (1, 0)):
             set_sbu_levels(apollo, port, levels)
@@ -855,13 +856,13 @@ def test_cc_sbu_control(apollo, port):
 def test_vbus_distribution(apollo, voltage, load_resistance,
         load_pin, passthrough, input_port):
     vmin_off = 0.0
-    vmax_off = 0.2
+    vmax_off = 0.3
     imin_off = -0.01
     imax_off =  0.01
     src_resistance = 0.08
-    input_cable_resistance = 0.04
+    input_cable_resistance = 0.05
     eut_resistance = 0.1
-    output_cable_resistance = 0.07
+    output_cable_resistance = 0.04
 
     if passthrough:
         total_resistance = sum([

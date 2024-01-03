@@ -165,8 +165,8 @@ def test():
     with group("Testing VBUS distribution"):
         configure_power_monitor(apollo)
         for (voltage, load_resistance, load_pin) in (
-                ( 5.0,  1.72, 'TEST_5V' ),
-                (10.0, 38.38, 'TEST_20V')):
+                ( 5.0,  1.8, 'TEST_5V' ),
+                (10.0, 40.0, 'TEST_20V')):
             for passthrough in (False, True):
                 for input_port in ('CONTROL', 'AUX'):
                     test_vbus_distribution(
@@ -175,8 +175,8 @@ def test():
 
     # Test all LEDs.
     with group("Testing LEDs"):
-        test_leds(apollo, "debug", debug_leds, set_debug_leds, 2.9, 3.4)
-        test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 2.7, 3.4)
+        test_leds(apollo, "debug", debug_leds, set_debug_leds, 3.1, 3.35)
+        test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 3.1, 3.35)
 
         with group("Checking visual appearance of LEDs"):
             # Turn on all LEDs.
@@ -211,8 +211,8 @@ def test():
     # Repeat VBUS distribution tests for TARGET-C -> TARGET-A with EUT off.
     with group(f"Testing VBUS distribution with EUT off"):
         for (voltage, load_resistance, load_pin) in (
-                ( 5.0,  1.72, 'TEST_5V' ),
-                (10.0, 38.38, 'TEST_20V')):
+                ( 5.0,  1.8, 'TEST_5V' ),
+                (10.0, 40.0, 'TEST_20V')):
             test_vbus_distribution(
                 None, voltage, load_resistance, load_pin, True, 'TARGET-C')
 
