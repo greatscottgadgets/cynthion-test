@@ -1,5 +1,5 @@
 MAJOR ?= 1
-MINOR ?= 3
+MINOR ?= 4
 
 ENV_PYTHON=environment/bin/python
 ENV_INSTALL=environment/bin/pip install

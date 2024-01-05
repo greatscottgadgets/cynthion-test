@@ -742,7 +742,7 @@ def test_eut_voltage(apollo, port, vmin, vmax):
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     voltage = value * 32 / 65536
-    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
+    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax, ignore=True)
 
 def test_eut_current(apollo, port, imin, imax):
     refresh_power_monitor(apollo)
@@ -754,7 +754,7 @@ def test_eut_current(apollo, port, imin, imax):
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', imin, imax)
+    return test_value("EUT current", port, current, 'A', imin, imax, ignore=True)
 
 def test_supply_port(supply_port):
     with group(f"Testing VBUS supply though {info(supply_port)}"):

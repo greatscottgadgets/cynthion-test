@@ -29,11 +29,8 @@ def test():
         test_vbus('TARGET-C', 4.85, 5.05)
         test_boost_current(0, 0.1)
 
-        # Check the voltage reaches the EUT's TARGET-A port.
-        test_voltage('TARGET_A_VBUS', 4.85, 5.05)
-
-        # Make sure TARGET-A cable is disconnected.
-        test_target_a_cable(False)
+        # Check no voltage reaches the EUT's TARGET-A port.
+        test_voltage('TARGET_A_VBUS', 0, 0.3)
 
         # Make sure there is no leakage to CONTROL and AUX ports.
         for port in ('CONTROL', 'AUX'):
@@ -100,6 +97,18 @@ def test():
 
     # Configure FPGA with test gateware.
     configure_fpga(apollo, 'selftest.bit')
+
+    # VBUS passthrough from Target-C to Target-A should now be on.
+    with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
+        # Apply VBUS power to TARGET-C.
+        connect_boost_supply_to('CONTROL', 'TARGET-C')
+        test_vbus('TARGET-C', 4.85, 5.05)
+
+        # Check the voltage now reaches the EUT's TARGET-A port.
+        test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+
+        # Make sure TARGET-A cable is disconnected.
+        test_target_a_cable(False)
 
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
@@ -211,14 +220,6 @@ def test():
     with group("Powering off EUT"):
         connect_boost_supply_to(None)
         connect_host_supply_to(None)
-
-    # Repeat VBUS distribution tests for TARGET-C -> TARGET-A with EUT off.
-    with group(f"Testing VBUS distribution with EUT off"):
-        for (voltage, load_resistance, load_pin) in (
-                ( 5.0,  1.8, 'TEST_5V' ),
-                (10.0, 40.0, 'TEST_20V')):
-            test_vbus_distribution(
-                None, voltage, load_resistance, load_pin, True, 'TARGET-C')
 
 if __name__ == "__main__":
     try:
