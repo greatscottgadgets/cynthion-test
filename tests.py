@@ -199,23 +199,26 @@ def set_boost_supply(voltage, current):
     boost.enable()
     boost.check_fault()
 
-def connect_boost_supply_to(port):
-    if port is None:
+def connect_boost_supply_to(*ports):
+    if ports == (None,):
         item(f"Disconnecting DC-DC converter")
     else:
-        item(f"Connecting DC-DC converter to {info(port)}")
-    BOOST_VBUS_AUX.low()
-    BOOST_VBUS_CON.low()
-    BOOST_VBUS_TC.low()
-    if port == 'AUX':
-        BOOST_VBUS_AUX.high()
-    if port == 'CONTROL':
+        item(f"Connecting DC-DC converter to {str.join(' and ', map(info, ports))}")
+    if 'CONTROL' in ports:
         BOOST_VBUS_CON.high()
-    if port == 'TARGET-C':
+    if 'AUX' in ports:
+        BOOST_VBUS_AUX.high()
+    if 'TARGET-C' in ports:
         BOOST_VBUS_TC.high()
+    if 'CONTROL' not in ports:
+        BOOST_VBUS_CON.low()
+    if 'AUX' not in ports:
+        BOOST_VBUS_AUX.low()
+    if 'TARGET-C' not in ports:
+        BOOST_VBUS_TC.low()
     boost.check_fault()
     global boost_port
-    boost_port = port
+    boost_port = ports[0]
 
 def test_boost_current(minimum, maximum):
     V_DIV.low()
