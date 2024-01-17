@@ -10,6 +10,7 @@ from luna.gateware.applets.flash_bridge import FlashBridgeConnection
 from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
 from formatting import *
+from ranges import *
 from tycho import *
 from eut import *
 from time import time, sleep
@@ -96,42 +97,42 @@ def check_for_shorts(port):
 
         with short_check('VBUS', 'GND', port):
             set_pin('GND_EUT', True)
-            test_vbus(port, 0.0, 2.8)
+            test_vbus(port, Range(0.0, 2.8))
             set_pin('GND_EUT', None)
 
         with short_check('VBUS', 'SBU2', port):
             set_pin('SBU2_test', True)
-            test_vbus(port, 0.0, 2.0)
+            test_vbus(port, Range(0.0, 2.0))
             set_pin('SBU2_test', None)
 
         with short_check('SBU2', 'CC1', port):
             set_pin('SBU2_test', True)
-            test_voltage('CC1_test', 0.0, 1.9)
+            test_voltage('CC1_test', Range(0.0, 1.9))
             set_pin('SBU2_test', None)
 
         with short_check('CC1', 'D-', port):
             set_pin('CC1_test', True),
-            test_voltage('D_TEST_MINUS', 0.0, 0.1)
+            test_voltage('D_TEST_MINUS', Range(0.0, 0.1))
             set_pin('CC1_test', None),
 
         with short_check('D-', 'D+', port):
             set_pin('D_TEST_MINUS', True),
-            test_voltage('D_TEST_PLUS', 0.0, 0.1)
+            test_voltage('D_TEST_PLUS', Range(0.0, 0.1))
             set_pin('D_TEST_MINUS', None),
 
         with short_check('D+', 'SBU1', port):
             set_pin('SBU1_test', True)
-            test_voltage('D_TEST_PLUS', 0.0, 0.1)
+            test_voltage('D_TEST_PLUS', Range(0.0, 0.1))
             set_pin('SBU1_test', None)
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
-            test_voltage('CC2_test', 0.0, 1.2)
+            test_voltage('CC2_test', Range(0.0, 1.2))
             set_pin('SBU1_test', None)
 
         with short_check('CC2', 'VBUS', port):
             set_pin('CC2_test', True)
-            test_vbus(port, 0.0, 1.2)
+            test_vbus(port, Range(0.0, 1.2))
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
@@ -172,13 +173,14 @@ def end_cc_measurement():
     connect_tester_cc_sbu_to(None)
 
 def check_cc_resistances(port):
+    expected_resistance = 5.1 * Range(0.9, 1.1)
     with group(f"Checking CC resistances on {info(port)}"):
         begin_cc_measurement(port)
         for pin in ('CC1', 'CC2'):
-            check_cc_resistance(pin, 4.59, 5.61)
+            check_cc_resistance(pin, expected_resistance)
         end_cc_measurement()
 
-def check_cc_resistance(pin, minimum, maximum):
+def check_cc_resistance(pin, expected):
     channel = f'{pin}_test'
     mux_select(channel)
     samples = gf.adc.read_samples(1000)
@@ -187,10 +189,10 @@ def check_cc_resistance(pin, minimum, maximum):
     item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
     switch_resistance = 0.17
     resistance = - (voltage * 5.1) / (voltage - 3.3) - switch_resistance
-    return test_value("resistance", pin, resistance, 'kΩ', minimum, maximum)
+    return test_value("resistance", pin, resistance, 'kΩ', expected)
 
 def test_leakage(port):
-    test_vbus(port, 0, 0.2)
+    test_vbus(port, Range(0, 0.2))
 
 def set_boost_supply(voltage, current):
     item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
@@ -220,7 +222,7 @@ def connect_boost_supply_to(*ports):
     global boost_port
     boost_port = ports[0]
 
-def test_boost_current(minimum, maximum):
+def test_boost_current(expected):
     V_DIV.low()
     V_DIV_MULT.low()
     pulldown = 100
@@ -231,7 +233,7 @@ def test_boost_current(minimum, maximum):
     shunt_resistance = 0.01
     shunt_current = max(shunt_voltage / shunt_resistance - 0.06, 0)
     channel = vbus_channels[boost_port]
-    return test_value("current", channel, shunt_current, 'A', minimum, maximum)
+    return test_value("current", channel, shunt_current, 'A', expected)
 
 def mux_select(channel):
     mux, pin = mux_channels[channel]
@@ -256,17 +258,17 @@ def mux_disconnect():
     MUX1_EN.low()
     MUX2_EN.low()
 
-def test_value(qty, src, value, unit, minimum, maximum, ignore=False):
-    message = f"Checking {qty} on {info(src)} is within {info(f'{minimum:.2f}')} to {info(f'{maximum:.2f} {unit}')}: "
+def test_value(qty, src, value, unit, expected, ignore=False):
+    message = f"Checking {qty} on {info(src)} is within {info(f'{expected.lo:.2f}')} to {info(f'{expected.hi:.2f} {unit}')}: "
     result = f"{value:.2f} {unit}"
-    if value < minimum:
+    if value < expected.lo:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too low on {src}: {value:.3f} {unit}, minimum was {minimum:.2f} {unit}")
-    elif value > maximum:
+            raise ValueError(f"{qty} too low on {src}: {value:.3f} {unit}, minimum was {expected.lo:.2f} {unit}")
+    elif value > expected.hi:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too high on {src}: {value:.3f} {unit}, maximum was {maximum:.2f} {unit}")
+            raise ValueError(f"{qty} too high on {src}: {value:.3f} {unit}, maximum was {expected.hi:.2f} {unit}")
     else:
         item(message + Fore.GREEN + result)
     return value
@@ -278,11 +280,11 @@ def measure_voltage(pulldown):
     voltage = scale * sum(samples) / len(samples)
     return voltage
 
-def test_voltage(channel, minimum, maximum, discharge=False):
+def test_voltage(channel, expected, discharge=False):
     if discharge:
         DISCHARGE.high()
     V_DIV.low()
-    if maximum <= 6.6:
+    if expected.hi <= 6.6:
         V_DIV_MULT.low()
         pulldown = 100
     else:
@@ -293,7 +295,7 @@ def test_voltage(channel, minimum, maximum, discharge=False):
     mux_disconnect()
     if discharge:
         DISCHARGE.low()
-    return test_value("voltage", channel, voltage, 'V', minimum, maximum)
+    return test_value("voltage", channel, voltage, 'V', expected)
 
 def set_pin(pin, level):
     required = ('input' if level is None else
@@ -337,13 +339,12 @@ def test_clock():
     target_hz = 60000000
     tolerance_ppm = 100
     tolerance_hz = target_hz * tolerance_ppm / 1e6
-    fmin = target_hz - tolerance_hz
-    fmax = target_hz + tolerance_hz
+    expected = target_hz + Range(-tolerance_hz, tolerance_hz)
     gf.apis.freq_count.setup_counters(reference_hz)
     gf.apis.freq_count.setup_counters(reference_hz)
     sleep(0.1)
     frequency = gf.apis.freq_count.count_cycles() * 10
-    test_value("frequency", "CLK", frequency, 'Hz', fmin, fmax)
+    test_value("frequency", "CLK", frequency, 'Hz', expected)
 
 def run_command(cmd):
     result = os.system(cmd + " > /dev/null 2>&1")
@@ -402,7 +403,8 @@ def set_fpga_leds(apollo, bitmask):
         apollo.registers.register_write(REGISTER_LEDS, bitmask)
         assert(apollo.registers.register_read(REGISTER_LEDS) == bitmask)
 
-def test_leds(apollo, device, leds, set_leds, off_min, off_max):
+def test_leds(apollo, device, leds, set_leds):
+    off = Range(3.1, 3.35)
     with group(f"Testing {device} LEDs"):
         for i in range(len(leds)):
             with group(f"Testing {device} LED {info(i)}"):
@@ -413,9 +415,9 @@ def test_leds(apollo, device, leds, set_leds, off_min, off_max):
                 # with the correct voltage.
                 for j, (testpoint, minimum, maximum) in enumerate(leds):
                     if i == j:
-                        test_voltage(testpoint, minimum, maximum)
+                        test_voltage(testpoint, Range(minimum, maximum))
                     else:
-                        test_voltage(testpoint, off_min, off_max)
+                        test_voltage(testpoint, off)
 
 def test_jtag_scan(apollo):
     with group("Checking JTAG scan chain"):
@@ -650,8 +652,9 @@ def test_usb_hs(port):
                 f"Test failed because a transfer {messages[failed_out]}.")
 
         speed = total_data_exchanged / elapsed / 1000000
+        expected = Range(47, 50)
 
-        test_value("transfer rate", port, speed, 'MB/s', 47, 48)
+        test_value("transfer rate", port, speed, 'MB/s', expected)
 
         return handle
 
@@ -724,8 +727,8 @@ def set_passthrough(apollo, port, enable):
     with task(f"{action} VBUS passthrough for {info(port)}"):
         write_register(apollo, passthrough_registers[port], enable)
 
-def test_vbus(input_port, vmin, vmax):
-    test_voltage(vbus_channels[input_port], vmin, vmax)
+def test_vbus(input_port, expected):
+    test_voltage(vbus_channels[input_port], expected)
 
 def configure_power_monitor(apollo):
     with task("Configuring I2C power monitor"):
@@ -737,7 +740,7 @@ def refresh_power_monitor(apollo):
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
     sleep(0.01)
 
-def test_eut_voltage(apollo, port, vmin, vmax, discharge=False):
+def test_eut_voltage(apollo, port, expected, discharge=False):
     if discharge:
         DISCHARGE.high()
         mux_select(vbus_channels[port])
@@ -750,9 +753,9 @@ def test_eut_voltage(apollo, port, vmin, vmax, discharge=False):
     if discharge:
         DISCHARGE.low()
         mux_disconnect()
-    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
+    return test_value("EUT voltage", port, voltage, 'V', expected)
 
-def test_eut_current(apollo, port, imin, imax):
+def test_eut_current(apollo, port, expected):
     refresh_power_monitor(apollo)
     reg = mon_current_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
@@ -762,7 +765,7 @@ def test_eut_current(apollo, port, imin, imax):
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', imin, imax)
+    return test_value("EUT current", port, current, 'A', expected)
 
 def test_supply_port(supply_port):
     with group(f"Testing VBUS supply though {info(supply_port)}"):
@@ -772,8 +775,8 @@ def test_supply_port(supply_port):
         connect_boost_supply_to(supply_port)
 
         # Check supply present at port.
-        test_vbus(supply_port, 4.85, 5.1)
-        test_boost_current(0, 0.1)
+        test_vbus(supply_port, Range(4.85, 5.1))
+        test_boost_current(Range(0, 0.1))
 
         # Ramp the supply in 50mV steps up to 6.25V.
         for voltage in (mv / 1000 for mv in range(5000, 6250, 50)):
@@ -784,23 +787,20 @@ def test_supply_port(supply_port):
                 set_boost_supply(voltage, 0.25)
                 sleep(0.01)
 
-                schottky_drop_min, schottky_drop_max = (0.35, 0.85)
+                schottky_drop = Range(0.35, 0.85)
 
                 # Up to 5.5V, there must be only a diode drop.
                 if voltage <= 5.5:
-                    minimum = voltage - schottky_drop_max
-                    maximum = voltage - schottky_drop_min
+                    expected = voltage - schottky_drop
                 # Between 5.5V and 6.0V, OVP may kick in.
                 elif 5.5 <= voltage <= 6.0:
-                    minimum = 0
-                    maximum = voltage - schottky_drop_min
+                    expected = Range(0, voltage - schottky_drop.lo)
                 # Above 6.0V, OVP must kick in.
                 else:
-                    minimum = 0
-                    maximum = 6.0 - schottky_drop_min
+                    expected = Range(0, 6.0 - schottky_drop.lo)
 
                 # Check voltage at +5V rail.
-                test_voltage('+5V', minimum, maximum)
+                test_voltage('+5V', expected)
 
                 with group("Checking for leakage to other ports"):
                     for port in ('CONTROL', 'AUX', 'TARGET-C', 'TARGET-A'):
@@ -821,26 +821,24 @@ def test_supply_selection(apollo):
             connect_boost_supply_to('AUX')
 
             # Define ranges to distinguish high and low supplies.
-            schottky_drop_min, schottky_drop_max = (0.65, 0.85)
-            high_min = 5.35 - schottky_drop_max
-            high_max = 5.45 - schottky_drop_min
-            low_min = 3.5
-            low_max = 5.05 - schottky_drop_min
+            schottky_drop = Range(0.65, 0.85)
+            high = Range(5.35, 5.45) - schottky_drop
+            low = Range(3.5, 5.05 - schottky_drop.lo)
 
             # Ensure that ranges are distinguishable.
-            assert(high_min > low_max)
+            assert(high.lo > low.hi)
 
             # 5V rail should be switched to the higher supply.
-            test_voltage('+5V', high_min, high_max)
+            test_voltage('+5V', high)
 
         with group("Test FPGA control of AUX supply input"):
             # Tell the FPGA to disable the AUX supply input.
             # 5V rail should be switched to the lower host supply on CONTROL.
             enable_supply_input(apollo, 'AUX', False)
-            test_voltage('+5V', low_min, low_max)
+            test_voltage('+5V', low)
             # Re-enable AUX supply, check 5V rail is switched back to it.
             enable_supply_input(apollo, 'AUX', True)
-            test_voltage('+5V', high_min, high_max)
+            test_voltage('+5V', high)
 
         with group("Swap ports between host and boost converter"):
             set_boost_supply(4.5, 0.25)
@@ -849,16 +847,16 @@ def test_supply_selection(apollo):
 
         with group("Increase boost voltage to identifiable level"):
             set_boost_supply(5.4, 0.25)
-            test_voltage('+5V', high_min, high_max)
+            test_voltage('+5V', high)
 
         with group("Test FPGA control of CONTROL supply input"):
             # Tell the FPGA to disable the CONTROL supply input.
             # 5V rail should be switched to the lower host supply on AUX.
             enable_supply_input(apollo, 'CONTROL', False)
-            test_voltage('+5V', low_min, low_max)
+            test_voltage('+5V', low)
             # Re-enable CONTROL supply, check 5V rail is switched back to it.
             enable_supply_input(apollo, 'CONTROL', True)
-            test_voltage('+5V', high_min, high_max)
+            test_voltage('+5V', high)
 
         with group("Swap back to powering from host"):
             set_boost_supply(4.5, 0.25)
@@ -872,9 +870,9 @@ def test_cc_sbu_control(apollo, port):
             set_cc_levels(apollo, port, levels)
             for pin, level in zip(('CC1', 'CC2'), levels):
                 if level:
-                    check_cc_resistance(pin, 4.59, 5.61)
+                    check_cc_resistance(pin, Range(4.59, 5.61))
                 else:
-                    check_cc_resistance(pin, 30, 1000)
+                    check_cc_resistance(pin, Range(30, 1000))
     with group(f"Checking control of {info(port)} SBU lines"):
         for levels in ((0, 1), (1, 0)):
             set_sbu_levels(apollo, port, levels)
@@ -884,14 +882,14 @@ def test_cc_sbu_control(apollo, port):
 
 def test_vbus_distribution(apollo, voltage, load_resistance,
         load_pin, passthrough, input_port):
-    vmin_off = 0.0
-    vmax_off = 0.1
-    imin_off = -0.01
-    imax_off =  0.01
-    src_resistance = 0.08
-    input_cable_resistance = 0.15
-    eut_resistance = 0.1
-    output_cable_resistance = 0.04
+    v_off = Range(0.0, 0.1)
+    i_off = Range(-0.01, 0.01)
+    src_resistance = Range(0.07, 0.09)
+    input_cable_resistance = Range(0.14, 0.16)
+    eut_resistance = Range(0.09, 0.11)
+    output_cable_resistance = Range(0.03, 0.05)
+    scale_error = Range(0.98, 1.02)
+    offset_error = Range(-0.01, 0.01)
 
     if passthrough:
         total_resistance = sum([
@@ -899,23 +897,18 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
             output_cable_resistance, load_resistance])
         current = voltage / total_resistance
     else:
-        current = 0
+        current = Range(0.0, 0.0)
 
     src_drop = src_resistance * current
     input_cable_drop = input_cable_resistance * current
     eut_drop = eut_resistance * current
     output_cable_drop = output_cable_resistance * current
-    vmin_sp = voltage * 0.98 - 0.01 - src_drop
-    vmax_sp = voltage * 1.02 + 0.01 - src_drop
-    vmin_ip = vmin_sp - input_cable_drop
-    vmax_ip = vmax_sp - input_cable_drop
-    vmin_op = (vmin_ip - eut_drop) if passthrough else vmin_off
-    vmax_op = (vmax_ip - eut_drop) if passthrough else vmax_off
-    vmin_ld = vmin_op - output_cable_drop
-    vmax_ld = vmax_op - output_cable_drop
+    v_sp = voltage * scale_error + offset_error - src_drop
+    v_ip = v_sp - input_cable_drop
+    v_op = (v_ip - eut_drop) if passthrough else v_off
+    v_ld = v_op - output_cable_drop
 
-    imin_on = current * 0.98 - 0.01
-    imax_on = current * 1.02 + 0.01
+    i_on = current * scale_error + offset_error
 
     supply_ports = {
         'CONTROL': 'AUX',
@@ -937,7 +930,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
                 enable_supply_input(apollo, input_port, False)
 
         with group(f"Setting up test conditions"):
-            set_boost_supply(voltage, current + 0.3)
+            set_boost_supply(voltage, current.hi + 0.3)
             if apollo:
                 for port in ('CONTROL', 'AUX', 'TARGET-C'):
                     set_passthrough(apollo, port,
@@ -952,27 +945,27 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
         if apollo:
             with group("Checking voltage and current on supply port"):
-                test_vbus(supply_port, 4.3, 5.25)
-                test_eut_voltage(apollo, supply_port, 4.3, 5.25)
-                test_eut_current(apollo, supply_port, 0.13, 0.16)
+                test_vbus(supply_port, Range(4.3, 5.25))
+                test_eut_voltage(apollo, supply_port, Range(4.3, 5.25))
+                test_eut_current(apollo, supply_port, Range(0.13, 0.16))
 
             with group("Checking voltages and positive current on input"):
-                test_vbus(input_port, vmin_sp, vmax_sp)
-                test_boost_current(imin_on, imax_on)
-                test_eut_voltage(apollo, input_port, vmin_ip, vmax_ip)
-                test_eut_current(apollo, input_port, imin_on, imax_on)
+                test_vbus(input_port, v_sp)
+                test_boost_current(i_on)
+                test_eut_voltage(apollo, input_port, v_ip)
+                test_eut_current(apollo, input_port, i_on)
 
             with group("Checking voltages and negative current on output"):
                 discharge = not passthrough
-                test_voltage('TARGET_A_VBUS', vmin_op, vmax_op, discharge)
-                test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op, discharge)
-                test_eut_current(apollo, 'TARGET-A', -imax_on, -imin_on)
-                test_voltage('VBUS_TA', vmin_ld, vmax_ld)
+                test_voltage('TARGET_A_VBUS', v_op, discharge)
+                test_eut_voltage(apollo, 'TARGET-A', v_op, discharge)
+                test_eut_current(apollo, 'TARGET-A', -i_on)
+                test_voltage('VBUS_TA', v_ld)
         else:
             with group("Checking voltages"):
-                test_vbus(input_port, vmin_sp, vmax_sp)
-                test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
-                test_voltage('VBUS_TA', vmin_ld, vmax_ld)
+                test_vbus(input_port, v_sp)
+                test_voltage('TARGET_A_VBUS', v_op)
+                test_voltage('VBUS_TA', v_ld)
 
         with group("Checking for leakage on other ports"):
             for port in ('CONTROL', 'AUX', 'TARGET-C'):
@@ -980,10 +973,10 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
                     continue
                 if apollo and port == supply_port:
                     continue
-                test_vbus(port, vmin_off, vmax_off)
+                test_vbus(port, v_off)
                 if apollo:
-                    test_eut_voltage(apollo, port, vmin_off, vmax_off)
-                    test_eut_current(apollo, port, imin_off, imax_off)
+                    test_eut_voltage(apollo, port, v_off)
+                    test_eut_current(apollo, port, i_off)
 
         with group("Shutting down test"):
             if passthrough:
@@ -1013,9 +1006,9 @@ def test_target_a_cable(required):
     correct = "connected" if required else "disconnected"
     incorrect = "disconnected" if required else "connected"
     with group(f"Checking {info('TARGET-A')} cable is {info(correct)}"):
-        vmin, vmax = (4.85, 5.05) if required else (0, 0.05)
+        expected_voltage = Range(4.85, 5.05) if required else Range(0, 0.05)
         try:
-            test_vbus('TARGET-A', vmin, vmax)
+            test_vbus('TARGET-A', expected_voltage)
             success = True
         except ValueError:
             success = False

@@ -26,11 +26,11 @@ def test():
     with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
         set_boost_supply(5.0, 0.05)
         connect_boost_supply_to('TARGET-C')
-        test_vbus('TARGET-C', 4.85, 5.05)
-        test_boost_current(0, 0.1)
+        test_vbus('TARGET-C', Range(4.85, 5.05))
+        test_boost_current(Range(0, 0.1))
 
         # Check no voltage reaches the EUT's TARGET-A port.
-        test_voltage('TARGET_A_VBUS', 0, 0.3)
+        test_voltage('TARGET_A_VBUS', Range(0, 0.3))
 
         # Make sure there is no leakage to CONTROL and AUX ports.
         for port in ('CONTROL', 'AUX'):
@@ -51,10 +51,10 @@ def test():
     # Check all supply rails come up correctly.
     with group("Checking all supply voltages"):
         for (testpoint, minimum, maximum) in supplies:
-            test_voltage(testpoint, minimum, maximum)
+            test_voltage(testpoint, Range(minimum, maximum))
 
     # Check supply current.
-    test_boost_current(0, 0.1)
+    test_boost_current(Range(0, 0.1))
 
     # Re-check the CC resistances now that the Type-C controllers have power.
     with group("Checking CC resistances with EUT powered"):
@@ -102,10 +102,10 @@ def test():
     with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
         # Apply VBUS power to TARGET-C.
         connect_boost_supply_to('CONTROL', 'TARGET-C')
-        test_vbus('TARGET-C', 4.85, 5.05)
+        test_vbus('TARGET-C', Range(4.85, 5.05))
 
         # Check the voltage now reaches the EUT's TARGET-A port.
-        test_voltage('TARGET_A_VBUS', 4.85, 5.05)
+        test_voltage('TARGET_A_VBUS', Range(4.85, 5.05))
 
         # Make sure TARGET-A cable is disconnected.
         test_target_a_cable(False)
@@ -113,7 +113,7 @@ def test():
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
         for (testpoint, minimum, maximum) in phy_supplies:
-            test_voltage(testpoint, minimum, maximum)
+            test_voltage(testpoint, Range(minimum, maximum))
 
     # Run self-test routine. Should include:
     #
@@ -188,8 +188,8 @@ def test():
 
     # Test all LEDs.
     with group("Testing LEDs"):
-        test_leds(apollo, "debug", debug_leds, set_debug_leds, 3.1, 3.35)
-        test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds, 3.1, 3.35)
+        test_leds(apollo, "debug", debug_leds, set_debug_leds)
+        test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds)
 
         with group("Checking visual appearance of LEDs"):
             # Turn on all LEDs.
