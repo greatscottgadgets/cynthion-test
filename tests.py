@@ -192,7 +192,7 @@ def check_cc_resistance(pin, expected):
     return test_value("resistance", pin, resistance, 'kΩ', expected)
 
 def test_leakage(port):
-    test_vbus(port, Range(0, 0.2))
+    test_vbus(port, Range(0, 0.05), discharge=True)
 
 def set_boost_supply(voltage, current):
     item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
@@ -727,8 +727,8 @@ def set_passthrough(apollo, port, enable):
     with task(f"{action} VBUS passthrough for {info(port)}"):
         write_register(apollo, passthrough_registers[port], enable)
 
-def test_vbus(input_port, expected):
-    test_voltage(vbus_channels[input_port], expected)
+def test_vbus(input_port, expected, discharge=False):
+    test_voltage(vbus_channels[input_port], expected, discharge)
 
 def configure_power_monitor(apollo):
     with task("Configuring I2C power monitor"):
