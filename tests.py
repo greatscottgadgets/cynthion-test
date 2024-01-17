@@ -278,7 +278,9 @@ def measure_voltage(pulldown):
     voltage = scale * sum(samples) / len(samples)
     return voltage
 
-def test_voltage(channel, minimum, maximum):
+def test_voltage(channel, minimum, maximum, discharge=False):
+    if discharge:
+        DISCHARGE.high()
     V_DIV.low()
     if maximum <= 6.6:
         V_DIV_MULT.low()
@@ -289,6 +291,8 @@ def test_voltage(channel, minimum, maximum):
     mux_select(channel)
     voltage = measure_voltage(pulldown)
     mux_disconnect()
+    if discharge:
+        DISCHARGE.low()
     return test_value("voltage", channel, voltage, 'V', minimum, maximum)
 
 def set_pin(pin, level):
@@ -733,13 +737,20 @@ def refresh_power_monitor(apollo):
     write_register(apollo, REGISTER_PWR_MON_VALUE, 0)
     sleep(0.01)
 
-def test_eut_voltage(apollo, port, vmin, vmax):
+def test_eut_voltage(apollo, port, vmin, vmax, discharge=False):
+    if discharge:
+        DISCHARGE.high()
+        mux_select(vbus_channels[port])
+        sleep(0.05)
     refresh_power_monitor(apollo)
     reg = mon_voltage_registers[port]
     write_register(apollo, REGISTER_PWR_MON_ADDR, (reg << 8) | 2)
     value = read_register(apollo, REGISTER_PWR_MON_VALUE)
     voltage = value * 32 / 65536
-    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax, ignore=True)
+    if discharge:
+        DISCHARGE.low()
+        mux_disconnect()
+    return test_value("EUT voltage", port, voltage, 'V', vmin, vmax)
 
 def test_eut_current(apollo, port, imin, imax):
     refresh_power_monitor(apollo)
@@ -751,7 +762,7 @@ def test_eut_current(apollo, port, imin, imax):
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', imin, imax, ignore=True)
+    return test_value("EUT current", port, current, 'A', imin, imax)
 
 def test_supply_port(supply_port):
     with group(f"Testing VBUS supply though {info(supply_port)}"):
@@ -874,7 +885,7 @@ def test_cc_sbu_control(apollo, port):
 def test_vbus_distribution(apollo, voltage, load_resistance,
         load_pin, passthrough, input_port):
     vmin_off = 0.0
-    vmax_off = 0.3
+    vmax_off = 0.1
     imin_off = -0.01
     imax_off =  0.01
     src_resistance = 0.08
@@ -952,8 +963,9 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
                 test_eut_current(apollo, input_port, imin_on, imax_on)
 
             with group("Checking voltages and negative current on output"):
-                test_voltage('TARGET_A_VBUS', vmin_op, vmax_op)
-                test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op)
+                discharge = not passthrough
+                test_voltage('TARGET_A_VBUS', vmin_op, vmax_op, discharge)
+                test_eut_voltage(apollo, 'TARGET-A', vmin_op, vmax_op, discharge)
                 test_eut_current(apollo, 'TARGET-A', -imax_on, -imin_on)
                 test_voltage('VBUS_TA', vmin_ld, vmax_ld)
         else:
