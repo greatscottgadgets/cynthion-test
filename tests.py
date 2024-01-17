@@ -553,9 +553,6 @@ def run_self_test(apollo):
 
 
 def test_usb_hs(port):
-    if port == 'AUX':
-        todo(f"Testing USB HS comms on {info('AUX')}")
-        return
     with group(f"Testing USB HS comms on {info(port)}"):
         connect_host_to(port)
 

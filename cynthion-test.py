@@ -138,9 +138,9 @@ def test():
         configure_fpga(apollo, 'speedtest.bit')
         request_control_handoff_to_fpga(apollo)
         for port in ('TARGET-C', 'AUX'):
-            connect_boost_supply_to(port)
+            connect_boost_supply_to('CONTROL', port)
             test_usb_hs(port)
-            disconnect_supply_and_discharge(port)
+            connect_host_supply_to('CONTROL')
         handle = test_usb_hs('CONTROL')
 
     # Request handoff and reconnect to Apollo.
