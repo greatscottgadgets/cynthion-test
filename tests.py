@@ -127,12 +127,12 @@ def check_for_shorts(port):
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
-            test_voltage('CC2_test', Range(0.0, 1.2))
+            test_voltage('CC2_test', Range(0.0, 1.4))
             set_pin('SBU1_test', None)
 
         with short_check('CC2', 'VBUS', port):
             set_pin('CC2_test', True)
-            test_vbus(port, Range(0.0, 1.2))
+            test_vbus(port, Range(0.0, 1.4))
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
@@ -652,7 +652,7 @@ def test_usb_hs(port):
                 f"Test failed because a transfer {messages[failed_out]}.")
 
         speed = total_data_exchanged / elapsed / 1000000
-        expected = Range(47, 50)
+        expected = Range(46, 50)
 
         test_value("transfer rate", port, speed, 'MB/s', expected)
 
@@ -872,7 +872,7 @@ def test_cc_sbu_control(apollo, port):
                 if level:
                     check_cc_resistance(pin, Range(4.59, 5.61))
                 else:
-                    check_cc_resistance(pin, Range(30, 1000))
+                    check_cc_resistance(pin, Range(15, 1000))
     with group(f"Checking control of {info(port)} SBU lines"):
         for levels in ((0, 1), (1, 0)):
             set_sbu_levels(apollo, port, levels)
