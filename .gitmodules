@@ -28,3 +28,6 @@
 [submodule "dependencies/libgreat"]
 	path = dependencies/libgreat
 	url = https://github.com/greatscottgadgets/libgreat
+[submodule "dependencies/pyfwup"]
+	path = dependencies/pyfwup
+	url = https://github.com/greatscottgadgets/pyfwup

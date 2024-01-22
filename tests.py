@@ -357,7 +357,7 @@ def flash_bootloader():
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
-        run_command('dfu-util -a 0 -d 1d50:615c -D firmware.bin')
+        run_command('environment/bin/fwup-util -d 1d50:615c firmware.bin')
 
 def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
