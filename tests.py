@@ -97,42 +97,42 @@ def check_for_shorts(port):
 
         with short_check('VBUS', 'GND', port):
             set_pin('GND_EUT', True)
-            test_vbus(port, Range(0.0, 2.8))
+            test_vbus(port, Range(0.0, 2.8), discharge=True)
             set_pin('GND_EUT', None)
 
         with short_check('VBUS', 'SBU2', port):
             set_pin('SBU2_test', True)
-            test_vbus(port, Range(0.0, 2.0))
+            test_vbus(port, Range(0.0, 2.1), discharge=True)
             set_pin('SBU2_test', None)
 
         with short_check('SBU2', 'CC1', port):
             set_pin('SBU2_test', True)
-            test_voltage('CC1_test', Range(0.0, 1.9))
+            test_voltage('CC1_test', Range(0.0, 1.2), discharge=True)
             set_pin('SBU2_test', None)
 
         with short_check('CC1', 'D-', port):
             set_pin('CC1_test', True),
-            test_voltage('D_TEST_MINUS', Range(0.0, 0.1))
+            test_voltage('D_TEST_MINUS', Range(0.0, 0.1), discharge=True)
             set_pin('CC1_test', None),
 
         with short_check('D-', 'D+', port):
             set_pin('D_TEST_MINUS', True),
-            test_voltage('D_TEST_PLUS', Range(0.0, 0.1))
+            test_voltage('D_TEST_PLUS', Range(0.0, 0.1), discharge=True)
             set_pin('D_TEST_MINUS', None),
 
         with short_check('D+', 'SBU1', port):
             set_pin('SBU1_test', True)
-            test_voltage('D_TEST_PLUS', Range(0.0, 0.1))
+            test_voltage('D_TEST_PLUS', Range(0.0, 0.1), discharge=True)
             set_pin('SBU1_test', None)
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
-            test_voltage('CC2_test', Range(0.0, 1.4))
+            test_voltage('CC2_test', Range(0.0, 1.0), discharge=True)
             set_pin('SBU1_test', None)
 
         with short_check('CC2', 'VBUS', port):
             set_pin('CC2_test', True)
-            test_vbus(port, Range(0.0, 1.4))
+            test_vbus(port, Range(0.0, 1.1), discharge=True)
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
