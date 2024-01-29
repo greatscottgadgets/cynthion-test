@@ -714,14 +714,6 @@ def connect_host_supply_to(*ports):
     if 'AUX' not in ports:
         HOST_VBUS_AUX.low()
 
-def request_target_a_cable():
-    print()
-    print(
-        Fore.BLUE +
-        "=== Connect cable to Target-A port on EUT and press ENTER ===" +
-        Style.RESET_ALL)
-    input()
-
 def set_passthrough(apollo, port, enable):
     action = 'Enabling' if enable else 'Disabling'
     with task(f"{action} VBUS passthrough for {info(port)}"):
