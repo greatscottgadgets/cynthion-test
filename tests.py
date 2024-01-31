@@ -143,17 +143,16 @@ def connect_grounds():
     GND_EN.high()
 
 def connect_tester_to(port):
-    item(f"Connecting tester D+/D- to {info(port)}")
-    D_OEn_1.high()
-    D_S_1.set_state(1)
-    if port is None:
-        return
-    D_OEn_1.low()
+    connect_usb('tester', port)
 
 def connect_host_to(port):
-    item(f"Connecting host D+/D- to {info(port)}")
+    connect_usb('host', port)
+
+def connect_usb(source, port):
+    item(f"Connecting {info(source)} D+/D- to {info(port)}")
     D_OEn_1.high()
-    D_S_1.set_state(0)
+    states = {'host': 0, 'tester': 1}
+    D_S_1.set_state(states[source])
     indices = {None: 0, 'TARGET-C': 1, 'AUX': 2, 'CONTROL': 3}
     index = indices[port]
     D_C0.set_state((index & 1) != 0)
