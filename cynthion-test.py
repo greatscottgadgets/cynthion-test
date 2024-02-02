@@ -182,7 +182,7 @@ def test():
         configure_power_monitor(apollo)
         for (voltage, load_resistance, load_pin) in (
                 ( 5.0,  1.8, 'TEST_5V' ),
-                (10.0, 40.0, 'TEST_20V')):
+                (20.0, 40.0, 'TEST_20V')):
             for passthrough in (False, True):
                 for input_port in ('CONTROL', 'AUX'):
                     test_vbus_distribution(
