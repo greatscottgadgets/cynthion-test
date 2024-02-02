@@ -288,7 +288,7 @@ def test_voltage(channel, expected, discharge=False):
         pulldown = 100
     else:
         V_DIV_MULT.high()
-        pulldown = (100 * 42.2) / (100 + 42.2)
+        pulldown = (100 * 22) / (100 + 22)
     mux_select(channel)
     voltage = measure_voltage(pulldown)
     mux_disconnect()
