@@ -9,6 +9,8 @@ BOARD_VARS=BOARD_REVISION_MAJOR=$(MAJOR) BOARD_REVISION_MINOR=$(MINOR)
 APOLLO_VARS=APOLLO_BOARD=cynthion $(BOARD_VARS)
 FIRMWARE=dependencies/apollo/firmware/_build/cynthion_d11/firmware.bin
 BOOTLOADER=dependencies/saturn-v/bootloader.elf
+GF_FW=dependencies/greatfet/firmware
+GF_FW_BIN=$(GF_FW)/build/greatfet_usb/greatfet_usb.bin
 ANALYZER=cynthion.gateware.analyzer.top
 
 all: $(TIMESTAMP)
@@ -35,6 +37,17 @@ firmware.bin: $(FIRMWARE)
 $(FIRMWARE):
 	$(APOLLO_VARS) make -C dependencies/apollo/firmware get-deps
 	$(APOLLO_VARS) make -C dependencies/apollo/firmware
+
+flash-greatfet: greatfet_usb.bin
+	environment/bin/greatfet_firmware -w greatfet_usb.bin -R
+
+greatfet_usb.bin: $(GF_FW_BIN)
+	cp $< $@
+
+$(GF_FW_BIN):
+	mkdir -p $(GF_FW)/build
+	cmake -S $(GF_FW) -B $(GF_FW)/build
+	make -C $(GF_FW)/build
 
 bitstreams: analyzer.bit flashbridge.bit selftest.bit speedtest.bit
 
@@ -66,4 +79,5 @@ clean:
 	$(APOLLO_VARS) make -C dependencies/apollo/firmware clean
 	make -C dependencies/saturn-v clean
 	rm -f $(BOOTLOADER)
+	rm -rf $(GF_FW)/build
 	rm -rf environment
