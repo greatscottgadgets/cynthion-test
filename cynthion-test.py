@@ -35,8 +35,8 @@ def test(user_present: bool):
         test_vbus('TARGET-C', Range(4.85, 5.05))
         test_boost_current(Range(0, 0.1))
 
-        # Check no voltage reaches the EUT's TARGET-A port.
-        test_voltage('TARGET_A_VBUS', Range(0, 0.05), discharge=True)
+        # Check voltage reaches the EUT's TARGET-A port.
+        test_voltage('TARGET_A_VBUS', Range(4.85, 5.05), discharge=True)
 
         # Make sure there is no leakage to CONTROL and AUX ports.
         for port in ('CONTROL', 'AUX'):

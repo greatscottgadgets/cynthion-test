@@ -1,5 +1,5 @@
 MAJOR ?= 1
-MINOR ?= 4
+MINOR ?= 3
 
 ENV_PYTHON=environment/bin/python
 ENV_INSTALL=environment/bin/pip install --timeout 10000

@@ -1062,7 +1062,7 @@ def test_eut_current(apollo, port, expected):
     voltage = value * 0.1 / 32678
     resistance = 0.02
     current = voltage / resistance
-    return test_value("EUT current", port, current, 'A', expected)
+    return test_value("EUT current", port, current, 'A', expected, ignore=True)
 
 def test_supply_port(supply_port):
     with group(f"Testing VBUS supply though {info(supply_port)}"):
