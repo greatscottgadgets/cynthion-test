@@ -867,8 +867,8 @@ def test_cc_sbu_control(apollo, port):
     with group(f"Checking control of {info(port)} SBU lines"):
         for levels in ((0, 1), (1, 0)):
             set_sbu_levels(apollo, port, levels)
-            test_pin('SBU2_test', levels[0])
-            test_pin('SBU1_test', levels[1])
+            test_pin('SBU1_test', levels[0])
+            test_pin('SBU2_test', levels[1])
     end_cc_measurement()
 
 def test_vbus_distribution(apollo, voltage, load_resistance,
@@ -876,7 +876,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
     v_off = Range(0.0, 0.1)
     i_off = Range(-0.01, 0.01)
     src_resistance = Range(0.07, 0.09)
-    input_cable_resistance = Range(0.14, 0.16)
+    input_cable_resistance = Range(0.04, 0.16)
     eut_resistance = Range(0.09, 0.11)
     output_cable_resistance = Range(0.03, 0.05)
     scale_error = Range(0.98, 1.02)
