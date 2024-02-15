@@ -381,6 +381,10 @@ def test_analyzer_present():
     with group(f"Checking for analyzer"):
         return find_device(0x1d50, 0x615b, "LUNA", "USB Analyzer")
 
+def test_fx2_present():
+    with group(f"Checking for FX2"):
+        return find_device(0x04b4, 0x8613)
+
 def simulate_program_button():
     with group(f"Simulating pressing the {info('PROGRAM')} button"):
         set_pin('nBTN_PROGRAM', False)

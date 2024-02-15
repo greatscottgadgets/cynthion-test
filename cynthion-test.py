@@ -170,12 +170,22 @@ def test():
     request("connect cable to EUT Target-A port")
 
     # Check that the Target-A cable is connected.
-    set_boost_supply(5.0, 0.25)
-    connect_boost_supply_to('TARGET-C')
-    test_target_a_cable(True)
-    connect_boost_supply_to(None)
+    with group("Checking Target-A cable is connected"):
+        set_boost_supply(5.0, 0.25)
+        connect_boost_supply_to('TARGET-C')
+        test_target_a_cable(True)
 
-    todo("Test USB HS comms through target passthrough")
+    # Check that the FX2 enumerates through the passthrough.
+    with group("Testing Target-C to Target-A data passthrough"):
+        connect_host_to('TARGET-C')
+        FX2_EN.high()
+        test_fx2_present()
+        FX2_EN.low()
+        connect_boost_supply_to(None)
+
+    with group("Reconnecting to Apollo"):
+        connect_host_to('CONTROL')
+        apollo = test_apollo_present()
 
     # Test VBUS distribution at full voltages and currents.
     with group("Testing VBUS distribution"):
