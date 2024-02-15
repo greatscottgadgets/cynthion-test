@@ -471,7 +471,7 @@ def request_control_handoff_to_fpga(apollo):
         apollo.honor_fpga_adv()
         apollo.close()
 
-def find_device(vid, pid, mfg, prod):
+def find_device(vid, pid, mfg=None, prod=None):
     global last_bus, last_addr
     with group(f"Looking for device with"):
         item(f"VID: {info(f'0x{vid:04x}')}, PID: {info(f'0x{pid:04x}')}")
@@ -506,14 +506,16 @@ def find_device(vid, pid, mfg, prod):
                     if addr == last_addr:
                         continue
                     with group(f"Found at bus {info(bus)} address {info(addr)}"):
-                            with task(f"Checking manufacturer is {info(mfg)}"):
-                                if (string := device.getManufacturer()) != mfg:
-                                    raise ValueError(
-                                        f"Wrong manufacturer string: '{string}'")
-                            with task(f"Checking product is {info(prod)}"):
-                                if (string := device.getProduct()) != prod:
-                                    raise ValueError(
-                                        f"Wrong product string: '{string}'")
+                            if mfg is not None:
+                                with task(f"Checking manufacturer is {info(mfg)}"):
+                                    if (string := device.getManufacturer()) != mfg:
+                                        raise ValueError(
+                                            f"Wrong manufacturer string: '{string}'")
+                            if prod is not None:
+                                with task(f"Checking product is {info(prod)}"):
+                                    if (string := device.getProduct()) != prod:
+                                        raise ValueError(
+                                            f"Wrong product string: '{string}'")
                             serial = device.getSerialNumber()
                             item(f"Device serial is {info(serial)}")
                     context.hotplugDeregisterCallback(callback_handle)
