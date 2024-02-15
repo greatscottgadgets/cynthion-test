@@ -951,7 +951,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
                 test_voltage('TARGET_A_VBUS', v_op, discharge)
                 test_eut_voltage(apollo, 'TARGET-A', v_op, discharge)
                 test_eut_current(apollo, 'TARGET-A', -i_on)
-                test_voltage('VBUS_TA', v_ld)
+                test_voltage('VBUS_TA', v_ld, discharge)
         else:
             with group("Checking voltages"):
                 test_vbus(input_port, v_sp)
