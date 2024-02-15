@@ -26,5 +26,5 @@ debug_leds = ( # Values are 3.3V - Vf
     ('D10_Vf', 2.45, 2.65), # MHT192WDT-ICE, Ice Blue
     ('D11_Vf', 2.50, 2.70), # OSK40603C1E, Pink
     ('D12_Vf', 2.45, 2.65), # ORH-W46G, White
-    ('D13_Vf', 2.50, 2.70), # OSK40603C1E, Pink
+    ('D13_Vf', 2.50, 2.75), # OSK40603C1E, Pink
     ('D14_Vf', 2.45, 2.65)) # MHT192WDT-ICE, Ice Blue

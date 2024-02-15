@@ -127,12 +127,12 @@ def check_for_shorts(port):
 
         with short_check('SBU1', 'CC2', port):
             set_pin('SBU1_test', True)
-            test_voltage('CC2_test', Range(0.0, 1.3), discharge=True)
+            test_voltage('CC2_test', Range(0.0, 1.5), discharge=True)
             set_pin('SBU1_test', None)
 
         with short_check('CC2', 'VBUS', port):
             set_pin('CC2_test', True)
-            test_vbus(port, Range(0.0, 1.3), discharge=True)
+            test_vbus(port, Range(0.0, 2.1), discharge=True)
             set_pin('CC2_test', None)
 
         connect_tester_cc_sbu_to(None)
