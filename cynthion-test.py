@@ -3,6 +3,9 @@ import ipdb
 import sys
 
 def test():
+    # Load calibration data.
+    load_calibration()
+
     # Bring up boost converter so that VBUS switches work correctly.
     set_boost_supply(5.0, 0.1)
 

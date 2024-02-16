@@ -21,6 +21,9 @@ test: $(TIMESTAMP)
 debug: $(TIMESTAMP)
 	$(ENV_PYTHON) cynthion-test.py debug
 
+calibrate: $(TIMESTAMP)
+	$(ENV_PYTHON) calibrate.py
+
 bootloader: bootloader.elf
 
 bootloader.elf: $(BOOTLOADER)

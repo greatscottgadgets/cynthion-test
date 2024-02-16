@@ -15,7 +15,7 @@ from tycho import *
 from eut import *
 from time import time, sleep
 import usb1
-import os
+import os, pickle
 
 context = usb1.USBContext()
 last_bus = None
@@ -85,6 +85,32 @@ def request(text):
         elif pass_pressed():
             return
         sleep(0.001)
+
+class CalibrationError(Exception):
+    def __init__(self, msg):
+        self.msg = msg
+
+    def __str__(self):
+        return self.msg + ". Please run calibration."
+
+def load_calibration():
+    with task("Loading calibration data"):
+        global calibration
+        try:
+            file = open('calibration.dat', 'rb')
+        except FileNotFoundError:
+            raise CalibrationError("No calibration file found")
+        try:
+            calibration = pickle.load(file)
+        except Exception:
+            raise CalibrationError("Loading calibration file failed")
+        for field in (
+            'voltage_scale_lower',
+            'voltage_scale_upper',
+        ):
+            if field not in calibration:
+                raise CalibrationError(
+                    f"Field '{field}' not found in calibration data")
 
 def short_check(a, b, port):
     return group(f"Checking for {info(a)} to {info(b)} short on {info(port)}")
@@ -278,12 +304,14 @@ def measure_voltage(expected):
     if expected.hi <= 6.6:
         V_DIV_MULT.low()
         pulldown = 100
+        cal = calibration['voltage_scale_lower']
     else:
         V_DIV_MULT.high()
         pulldown = (100 * 22) / (100 + 22)
+        cal = calibration['voltage_scale_upper']
     scale = 3.3 / 1024 * (pulldown + pullup) / pulldown
     samples = gf.adc.read_samples(1000)
-    voltage = scale * sum(samples) / len(samples)
+    voltage = cal * scale * sum(samples) / len(samples)
     return voltage
 
 def test_voltage(channel, expected, discharge=False):
