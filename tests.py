@@ -724,7 +724,7 @@ def set_passthrough(apollo, port, enable):
         write_register(apollo, passthrough_registers[port], enable)
 
 def test_vbus(input_port, expected, discharge=False):
-    test_voltage(vbus_channels[input_port], expected, discharge)
+    return test_voltage(vbus_channels[input_port], expected, discharge)
 
 def configure_power_monitor(apollo):
     with task("Configuring I2C power monitor"):
