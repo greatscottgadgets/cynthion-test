@@ -226,7 +226,7 @@ def test_boost_current(expected):
     V_DIV_MULT.low()
     pulldown = 100
     mux_select('CDC')
-    cdc_voltage = measure_voltage(pulldown)
+    cdc_voltage = measure_voltage(Range(0, 1.1))
     mux_disconnect()
     shunt_voltage = cdc_voltage * 0.05
     shunt_resistance = 0.01
@@ -272,8 +272,15 @@ def test_value(qty, src, value, unit, expected, ignore=False):
         item(message + Fore.GREEN + result)
     return value
 
-def measure_voltage(pulldown):
+def measure_voltage(expected):
+    V_DIV.low()
     pullup = 100
+    if expected.hi <= 6.6:
+        V_DIV_MULT.low()
+        pulldown = 100
+    else:
+        V_DIV_MULT.high()
+        pulldown = (100 * 22) / (100 + 22)
     scale = 3.3 / 1024 * (pulldown + pullup) / pulldown
     samples = gf.adc.read_samples(1000)
     voltage = scale * sum(samples) / len(samples)
@@ -282,15 +289,8 @@ def measure_voltage(pulldown):
 def test_voltage(channel, expected, discharge=False):
     if discharge:
         DISCHARGE.high()
-    V_DIV.low()
-    if expected.hi <= 6.6:
-        V_DIV_MULT.low()
-        pulldown = 100
-    else:
-        V_DIV_MULT.high()
-        pulldown = (100 * 22) / (100 + 22)
     mux_select(channel)
-    voltage = measure_voltage(pulldown)
+    voltage = measure_voltage(expected)
     mux_disconnect()
     if discharge:
         DISCHARGE.low()
@@ -327,8 +327,7 @@ def discharge(port):
     V_DIV_MULT.low()
     DISCHARGE.high()
     mux_select(channel)
-    pulldown = 100
-    while measure_voltage(pulldown) > 0.1:
+    while measure_voltage(Range(0, 25)) > 0.1:
         sleep(0.05)
     mux_disconnect()
     DISCHARGE.low()
