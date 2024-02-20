@@ -17,6 +17,8 @@ def calibrate():
     # Power TARGET-C at 5V and calibrate lower range.
     with group("Calibrating low range"):
         set_boost_supply(5.0, 0.1)
+        # Boost converter needs a moment to stabilise on first startup.
+        sleep(0.1)
         scale_low = 5.0 / test_vbus('TARGET-C', Range(4.9, 5.1))
         item(f"Calibration factor: {info(scale_low)}")
 
