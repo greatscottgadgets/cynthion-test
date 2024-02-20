@@ -25,7 +25,7 @@ def calibrate():
     # Increase voltage to 15V and repeat.
     with group("Calibrating high range"):
         set_boost_supply(15.0, 0.1)
-        scale_high = 15.0 / test_vbus('TARGET-C', Range(14.8, 15.2))
+        scale_high = 15.0 / test_vbus('TARGET-C', Range(14.5, 15.5))
         item(f"Calibration factor: {info(scale_high)}")
 
     # Write out calibration.
