@@ -1,6 +1,3 @@
-from greatfet import GreatFET
-from tps55288 import TPS55288
-
 gpio_allocations = dict(
     BOOST_EN = ('J2_P27', 0),
     BOOST_VBUS_AUX = ('J2_P16', 0),
@@ -88,19 +85,3 @@ vbus_channels = {
     'TARGET-A': 'VBUS_TA',
     'TARGET-C': 'VBUS_TC',
 }
-
-gf = GreatFET()
-
-for name, (position, state) in gpio_allocations.items():
-    pin = gf.gpio.get_pin(position)
-    globals()[name] = pin
-    if state is None:
-        pin.input()
-    elif state:
-        pin.high()
-    else:
-        pin.low()
-
-BOOST_EN.high()
-boost = TPS55288(gf)
-boost.disable()

@@ -3,6 +3,9 @@ import tests
 import pickle
 
 def calibrate():
+    # Set up test system.
+    setup()
+
     # Use a dummy calibration while taking uncalibrated measurements.
     tests.calibration = dict(
         voltage_scale_upper = 1.0,

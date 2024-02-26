@@ -3,6 +3,9 @@ import ipdb
 import sys
 
 def test():
+    # Set up test system.
+    setup()
+
     # Load calibration data.
     load_calibration()
 

@@ -16,6 +16,8 @@ from eut import *
 from time import time, sleep
 import usb1
 import os, pickle
+from greatfet import GreatFET
+from tps55288 import TPS55288
 
 context = usb1.USBContext()
 last_bus = None
@@ -57,6 +59,40 @@ mon_current_registers = {
     'TARGET-C': 0x0C,
     'TARGET-A': 0x0B,
 }
+
+class Pin:
+    def __init__(self, inner):
+        self.inner = inner
+
+    def __getattr__(self, name):
+        return getattr(self.inner, name)
+
+for name in gpio_allocations:
+    globals()[name] = Pin(None)
+
+def setup():
+    with group("Setting up and checking test system"):
+        with task("Checking for GreatFET"):
+            global gf
+            try:
+                gf = GreatFET()
+            except Exception:
+                raise IOError("Could not connect to GreatFET. Check USB connections.")
+        with task("Configuring GPIOs"):
+            for name, (position, state) in gpio_allocations.items():
+                pin = gf.gpio.get_pin(position)
+                globals()[name].inner = pin
+                if state is None:
+                    pin.input()
+                elif state:
+                    pin.high()
+                else:
+                    pin.low()
+        with task("Configuring DC-DC converter"):
+            global boost
+            BOOST_EN.high()
+            boost = TPS55288(gf)
+            boost.disable()
 
 def reset():
     for name, (position, state) in gpio_allocations.items():
