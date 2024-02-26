@@ -44,4 +44,6 @@ if __name__ == "__main__":
         ok("Calibration complete")
     except KeyboardInterrupt:
         fail("Calibration stopped by user")
+    except Exception as e:
+        fail(str(e))
     reset()
