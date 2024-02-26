@@ -19,6 +19,8 @@ import os, pickle
 from greatfet import GreatFET
 from tps55288 import TPS55288
 
+gf = None
+
 context = usb1.USBContext()
 last_bus = None
 last_addr = None
@@ -95,6 +97,8 @@ def setup():
             boost.disable()
 
 def reset():
+    if gf is None:
+        return
     for name, (position, state) in gpio_allocations.items():
         pin = globals()[name]
         if state is None:
