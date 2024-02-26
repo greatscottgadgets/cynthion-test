@@ -544,8 +544,34 @@ def request_control_handoff_to_fpga(apollo):
         apollo.honor_fpga_adv()
         apollo.close()
 
-def find_device(vid, pid, mfg=None, prod=None):
+def check_device(device, mfg, prod):
     global last_bus, last_addr
+    bus = device.getBusNumber()
+    addr = device.getDeviceAddress()
+    # New device must be on the same bus as previously.
+    if last_bus is not None and bus != last_bus:
+        return False
+    # New device must have a different address to previous one.
+    if addr == last_addr:
+        return False
+    with group(f"Found at bus {info(bus)} address {info(addr)}"):
+            if mfg is not None:
+                with task(f"Checking manufacturer is {info(mfg)}"):
+                    if (string := device.getManufacturer()) != mfg:
+                        raise ValueError(
+                            f"Wrong manufacturer string: '{string}'")
+            if prod is not None:
+                with task(f"Checking product is {info(prod)}"):
+                    if (string := device.getProduct()) != prod:
+                        raise ValueError(
+                            f"Wrong product string: '{string}'")
+            serial = device.getSerialNumber()
+            item(f"Device serial is {info(serial)}")
+    last_bus = bus
+    last_addr = addr
+    return True
+
+def find_device(vid, pid, mfg=None, prod=None, timeout=3):
     with group(f"Looking for device with"):
         item(f"VID: {info(f'0x{vid:04x}')}, PID: {info(f'0x{pid:04x}')}")
         item(f"Manufacturer: {info(mfg)}")
@@ -564,42 +590,25 @@ def find_device(vid, pid, mfg=None, prod=None):
                 events=usb1.HOTPLUG_EVENT_DEVICE_ARRIVED,
                 flags=usb1.HOTPLUG_ENUMERATE)
 
-        end = time() + 3
+        end = time() + timeout
 
-        while (timeout := end - time()) > 0:
-            context.handleEventsTimeout(timeout)
+        while True:
             try:
                 while device := candidates.pop():
-                    bus = device.getBusNumber()
-                    addr = device.getDeviceAddress()
-                    # New device must be on the same bus as previously.
-                    if last_bus is not None and bus != last_bus:
+                    try:
+                        if check_device(device, mfg, prod):
+                            context.hotplugDeregisterCallback(callback_handle)
+                            return device
+                    except usb1.USBError:
                         continue
-                    # New device must have a different address to previous one.
-                    if addr == last_addr:
-                        continue
-                    with group(f"Found at bus {info(bus)} address {info(addr)}"):
-                            if mfg is not None:
-                                with task(f"Checking manufacturer is {info(mfg)}"):
-                                    if (string := device.getManufacturer()) != mfg:
-                                        raise ValueError(
-                                            f"Wrong manufacturer string: '{string}'")
-                            if prod is not None:
-                                with task(f"Checking product is {info(prod)}"):
-                                    if (string := device.getProduct()) != prod:
-                                        raise ValueError(
-                                            f"Wrong product string: '{string}'")
-                            serial = device.getSerialNumber()
-                            item(f"Device serial is {info(serial)}")
-                    context.hotplugDeregisterCallback(callback_handle)
-                    last_bus = bus
-                    last_addr = addr
-                    return device
-            except (IndexError, usb1.USBError, ValueError):
-                continue
-        else:
-            context.hotplugDeregisterCallback(callback_handle)
-            raise ValueError("Device not found")
+            except IndexError:
+                pass
+            timeout = end - time()
+            if timeout > 0:
+                context.handleEventsTimeout(timeout)
+            else:
+                context.hotplugDeregisterCallback(callback_handle)
+                raise ValueError("Device not found")
 
 def run_self_test(apollo):
     with group("Running self test"):
