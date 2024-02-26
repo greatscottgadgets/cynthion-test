@@ -24,6 +24,9 @@ debug: $(TIMESTAMP)
 calibrate: $(TIMESTAMP)
 	$(ENV_PYTHON) calibrate.py
 
+check: $(TIMESTAMP)
+	$(ENV_PYTHON) check.py
+
 bootloader: bootloader.elf
 
 bootloader.elf: $(BOOTLOADER)
