@@ -17,7 +17,7 @@ from time import time, sleep
 import usb1
 import os, pickle
 from greatfet import GreatFET
-from tps55288 import TPS55288
+from tps55288 import TPS55288, CDC
 
 gf = None
 
@@ -94,6 +94,8 @@ def setup():
             global boost
             BOOST_EN.high()
             boost = TPS55288(gf)
+            if boost.read(CDC) != 0b11100000:
+                raise IOError("Failed to communicate with DC-DC converter.")
             boost.disable()
 
 def reset():
