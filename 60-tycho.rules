@@ -1,0 +1,26 @@
+# Cynthion in Saturn-V / Apollo mode
+ATTR{idVendor}=="1d50", ATTR{idProduct}=="615c", TAG+="uaccess"
+
+# Cynthion in FPGA mode
+ATTR{idVendor}=="1d50", ATTR{idProduct}=="615b", TAG+="uaccess"
+
+# PID.codes test PIDs
+ATTR{idVendor}=="1209", ATTR{idProduct}=="0001", TAG+="uaccess"
+ATTR{idVendor}=="1209", ATTR{idProduct}=="0002", TAG+="uaccess"
+ATTR{idVendor}=="1209", ATTR{idProduct}=="0003", TAG+="uaccess"
+ATTR{idVendor}=="1209", ATTR{idProduct}=="0004", TAG+="uaccess"
+
+# GreatFET
+ATTR{idVendor}=="1d50", ATTR{idProduct}=="60e6", TAG+="uaccess"
+
+# GreatFET in DFU mode
+ATTR{idVendor}=="1fc9", ATTR{idProduct}=="000c", TAG+="uaccess"
+
+# Black Magic Probe
+ATTR{idVendor}=="1d50", ATTR{idProduct}=="6018", TAG+="uaccess"
+
+# Black Magic Probe in DFU mode
+ATTR{idVendor}=="1d50", ATTR{idProduct}=="6017", TAG+="uaccess"
+
+# Cypress FX2
+ATTR{idVendor}=="04b4", ATTR{idProduct}=="8613", TAG+="uaccess"

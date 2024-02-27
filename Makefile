@@ -27,6 +27,9 @@ calibrate: $(TIMESTAMP)
 check: $(TIMESTAMP)
 	$(ENV_PYTHON) check.py
 
+install-udev: 60-tycho.rules
+	sudo cp $< /etc/udev/rules.d/
+
 flash-blackmagic: blackmagic.bin
 	environment/bin/fwup-util $<
 
