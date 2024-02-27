@@ -48,6 +48,9 @@ def test():
         # Finished testing with supply from TARGET-C.
         disconnect_supply_and_discharge('TARGET-C')
 
+    # Make sure TARGET-A cable is disconnected.
+    test_target_a_cable(False)
+
     # Test supplying VBUS through CONTROL and AUX ports.
     for port in ('CONTROL', 'AUX'):
         test_supply_port(port)
@@ -116,9 +119,6 @@ def test():
 
         # Check the voltage now reaches the EUT's TARGET-A port.
         test_voltage('TARGET_A_VBUS', Range(4.85, 5.05))
-
-        # Make sure TARGET-A cable is disconnected.
-        test_target_a_cable(False)
 
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
