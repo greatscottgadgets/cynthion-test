@@ -74,12 +74,20 @@ for name in gpio_allocations:
 
 def setup():
     with group("Setting up and checking test system"):
-        with task("Checking for GreatFET"):
-            global gf
+        with group("Checking for GreatFET"):
             try:
-                gf = GreatFET()
+                find_device(0x1d50, 0x60e6,
+                            "Great Scott Gadgets",
+                            "GreatFET",
+                            timeout=0)
             except Exception:
-                raise IOError("Could not connect to GreatFET. Check USB connections.")
+                raise IOError("GreatFET not detected. Check USB connections.")
+            with task("Connecting to GreatFET"):
+                global gf
+                try:
+                    gf = GreatFET()
+                except Exception:
+                    raise IOError("Could not connect to GreatFET. Check USB connections.")
         with task("Configuring GPIOs"):
             for name, (position, state) in gpio_allocations.items():
                 pin = gf.gpio.get_pin(position)
@@ -97,6 +105,15 @@ def setup():
             if boost.read(CDC) != 0b11100000:
                 raise IOError("Failed to communicate with DC-DC converter.")
             boost.disable()
+        with group("Checking for Black Magic Probe"):
+            try:
+                find_device(0x1d50, 0x6018,
+                            "Black Magic Debug",
+                            "Black Magic Probe v1.9.1",
+                            timeout=0)
+            except Exception:
+                raise IOError("Black Magic Probe not detected. Check USB connections.")
+
 
 def reset():
     if gf is None:
