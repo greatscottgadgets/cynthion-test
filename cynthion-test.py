@@ -9,9 +9,6 @@ def test():
     # Load calibration data.
     load_calibration()
 
-    # Bring up boost converter so that VBUS switches work correctly.
-    set_boost_supply(5.0, 0.1)
-
     # First check for shorts at each EUT USB-C port.
     with group("Checking for shorts on all USB-C ports"):
         for port in ('CONTROL', 'AUX', 'TARGET-C'):

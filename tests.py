@@ -111,6 +111,7 @@ def setup():
             if boost.read(CDC) != 0b11100000:
                 raise IOError("Failed to communicate with DC-DC converter.")
             boost.disable()
+        set_boost_supply(5.0, 0.1)
         with group("Checking for Black Magic Probe"):
             try:
                 find_device(0x1d50, 0x6018,
