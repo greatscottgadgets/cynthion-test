@@ -27,6 +27,9 @@ calibrate: $(TIMESTAMP)
 check: $(TIMESTAMP)
 	$(ENV_PYTHON) check.py
 
+flash-blackmagic: blackmagic.bin
+	environment/bin/fwup-util $<
+
 bootloader: bootloader.elf
 
 bootloader.elf: $(BOOTLOADER)
