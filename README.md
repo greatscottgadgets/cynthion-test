@@ -55,6 +55,7 @@ make check
 # Calibrate the test system:
 make calibrate
 
-# Run the test:
+# Run the test. Before doing so, disconnect Target-A cable from the EUT.
+# You will be prompted to reconnect it during the test.
 make test
 ```
