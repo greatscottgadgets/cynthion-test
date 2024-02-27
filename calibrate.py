@@ -6,12 +6,6 @@ def calibrate():
     # Set up test system.
     setup()
 
-    # Use a dummy calibration while taking uncalibrated measurements.
-    tests.calibration = dict(
-        voltage_scale_upper = 1.0,
-        voltage_scale_lower = 1.0
-    )
-
     # Have user disconnect TARGET-C cable so we can power it without a load.
     # Using TARGET-C because it won't power up the EUT if they get it wrong.
     request("disconnect TARGET-C cable from EUT")

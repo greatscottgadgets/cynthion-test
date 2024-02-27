@@ -27,6 +27,11 @@ last_addr = None
 
 boost_port = None
 
+calibration = dict(
+    voltage_scale_upper = 1.0,
+    voltage_scale_lower = 1.0
+)
+
 vbus_registers = {
     'CONTROL': REGISTER_CON_VBUS_EN,
     'AUX':     REGISTER_AUX_VBUS_EN,
