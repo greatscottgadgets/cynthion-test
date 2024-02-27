@@ -88,6 +88,12 @@ def setup():
                     gf = GreatFET()
                 except Exception:
                     raise IOError("Could not connect to GreatFET. Check USB connections.")
+            with task("Reading GreatFET firmware version"):
+                version = gf.firmware_version()
+            expected = "git-v2021.2.1-65-g8d8be6f"
+            with task(f"Checking GreatFET firmware version is {info(expected)}"):
+                if version != expected:
+                    raise ValueError(f"GreatFET firmware version is {version}, expected {expected}.")
         with task("Configuring GPIOs"):
             for name, (position, state) in gpio_allocations.items():
                 pin = gf.gpio.get_pin(position)
