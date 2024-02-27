@@ -130,10 +130,17 @@ def setup():
         set_boost_supply(5.0, 0.1)
         with group("Checking for Black Magic Probe"):
             try:
-                find_device(0x1d50, 0x6018,
-                            "Black Magic Debug",
-                            "Black Magic Probe v1.9.1",
-                            timeout=0)
+                bmp = find_device(0x1d50, 0x6018,
+                                  "Black Magic Debug",
+                                  "Black Magic Probe v1.9.1",
+                                  timeout=0)
+                global blackmagic_port
+                blackmagic_port = (
+                    "/dev/serial/by-id/usb-" +
+                    bmp.getManufacturer().replace(' ', '_') + '_' +
+                    bmp.getProduct().replace(' ', '_') + '_' +
+                    bmp.getSerialNumber() + '-if00')
+                del bmp
             except Exception:
                 raise IOError("Black Magic Probe not detected. Check USB connections.")
 
@@ -461,6 +468,10 @@ def run_command(cmd):
 
 def flash_bootloader():
     with task(f"Flashing Saturn-V bootloader to MCU via SWD"):
+        script = open('flash-bootloader.gdb', 'w')
+        for line in open('flash-bootloader.template', 'r').readlines():
+            script.write(line.replace('BLACKMAGIC_PORT', blackmagic_port))
+        script.close()
         run_command('gdb-multiarch --batch -x flash-bootloader.gdb')
 
 def flash_firmware():
