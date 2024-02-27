@@ -109,6 +109,17 @@ def setup():
                     pin.high()
                 else:
                     pin.low()
+        with group("Checking for 24V supply"):
+            with task(f"Driving {info('D_TEST_PLUS')} high"):
+                D_TEST_PLUS.high()
+                mux_select('D_TEST_PLUS')
+            try:
+                test_voltage('D_TEST_PLUS', Range(3.2, 3.4))
+            except ValueError:
+                raise IOError("24V supply not detected. Check supply.")
+            with task(f"Releasing {info('D_TEST_PLUS')} drive"):
+                D_TEST_PLUS.input()
+                mux_disconnect()
         with task("Configuring DC-DC converter"):
             global boost
             BOOST_EN.high()
