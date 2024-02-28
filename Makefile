@@ -53,8 +53,8 @@ $(FIRMWARE):
 flash-greatfet: greatfet_usb.bin
 	environment/bin/greatfet_firmware -w greatfet_usb.bin -R
 
-greatfet_usb.bin: $(GF_FW_BIN)
-	cp $< $@
+greatfet-firmware: $(GF_FW_BIN)
+	cp $< greatfet_usb.bin
 
 $(GF_FW_BIN):
 	mkdir -p $(GF_FW)/build
