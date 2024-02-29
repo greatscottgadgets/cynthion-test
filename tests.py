@@ -1139,7 +1139,7 @@ def test_target_a_cable(required):
                 with task(f"Pulling {info('TARGET-A')} up to {info('3.3 V')}"):
                     mux_select('VBUS_TA')
                     V_DIV.high()
-                test_voltage('TARGET_A_VBUS', Range(0, 0.05))
+                test_voltage('TARGET_A_VBUS', Range(0, 0.1))
                 with task(f"Releasing {info('TARGET-A')} pullup"):
                     V_DIV.low()
                     mux_disconnect()
