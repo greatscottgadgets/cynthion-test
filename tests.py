@@ -760,30 +760,32 @@ def test_usb_hs(port):
             # ... and store it.
             active_transfers.append(transfer)
 
-        # Start our benchmark timer.
-        start_time = time()
+        with task("Running speed test"):
 
-        # Submit our transfers all at once.
-        for transfer in active_transfers:
-            transfer.submit()
+            # Start our benchmark timer.
+            start_time = time()
 
-        # Run our transfers until we get enough data.
-        while not should_terminate():
-            context.handleEvents()
+            # Submit our transfers all at once.
+            for transfer in active_transfers:
+                transfer.submit()
 
-        # Figure out how long this took us.
-        end_time = time()
-        elapsed = end_time - start_time
+            # Run our transfers until we get enough data.
+            while not should_terminate():
+                context.handleEvents()
 
-        # Cancel all of our active transfers.
-        for transfer in active_transfers:
-            if transfer.isSubmitted():
-                transfer.cancel()
+            # Figure out how long this took us.
+            end_time = time()
+            elapsed = end_time - start_time
 
-        # If we failed out; indicate it.
-        if failed_out:
-            raise RuntimeError(
-                f"Test failed because a transfer {messages[failed_out]}.")
+            # Cancel all of our active transfers.
+            for transfer in active_transfers:
+                if transfer.isSubmitted():
+                    transfer.cancel()
+
+            # If we failed out; indicate it.
+            if failed_out:
+                raise RuntimeError(
+                    f"Test failed because a transfer {messages[failed_out]}.")
 
         speed = total_data_exchanged / elapsed / 1000000
         expected = Range(46, 50)
