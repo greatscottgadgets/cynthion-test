@@ -12,7 +12,7 @@ phy_supplies = (
     ('AUX_PHY_3V3',     3.25, 3.35),
     ('AUX_PHY_1V8',     1.75, 1.85),
     ('TARGET_PHY_3V3',  3.25, 3.35),
-    ('TARGET_PHY_3V3',  3.25, 3.35))
+    ('TARGET_PHY_1V8',  1.75, 1.85))
 
 fpga_leds = (
     ('D7_Vf', 0.65, 0.85), # OSVX0603C1E, Purple
