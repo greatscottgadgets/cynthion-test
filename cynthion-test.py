@@ -147,7 +147,8 @@ def test():
         for port in ('TARGET-C', 'AUX'):
             connect_boost_supply_to('CONTROL', port)
             test_usb_hs(port)
-            connect_host_supply_to('CONTROL')
+            connect_host_to(None)
+        connect_boost_supply_to('CONTROL')
         handle = test_usb_hs('CONTROL')
 
     # Request handoff and reconnect to Apollo.
