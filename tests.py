@@ -264,17 +264,21 @@ def connect_host_to(port):
     connect_usb('host', port)
 
 def connect_usb(source, port):
-    item(f"Connecting {info(source)} D+/D- to {info(port)}")
-    D_OEn_1.high()
-    states = {'host': 0, 'tester': 1}
-    D_S_1.set_state(states[source])
-    indices = {None: 0, 'TARGET-C': 1, 'AUX': 2, 'CONTROL': 3}
-    index = indices[port]
-    D_C0.set_state((index & 1) != 0)
-    D_C1.set_state((index & 2) != 0)
     if port is None:
-        return
-    D_OEn_1.low()
+        msg = f"Disconnecting D+/D-"
+    else:
+        msg = f"Connecting {info(source)} D+/D- to {info(port)}"
+    with task(msg):
+        D_OEn_1.high()
+        states = {'host': 0, 'tester': 1}
+        D_S_1.set_state(states[source])
+        indices = {None: 0, 'TARGET-C': 1, 'AUX': 2, 'CONTROL': 3}
+        index = indices[port]
+        D_C0.set_state((index & 1) != 0)
+        D_C1.set_state((index & 2) != 0)
+        if port is None:
+            return
+        D_OEn_1.low()
 
 def begin_cc_measurement(port):
     connect_tester_cc_sbu_to(port)
