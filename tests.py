@@ -780,7 +780,10 @@ def test_usb_hs(port):
             # Cancel all of our active transfers.
             for transfer in active_transfers:
                 if transfer.isSubmitted():
-                    transfer.cancel()
+                    try:
+                        transfer.cancel()
+                    except usb1.USBErrorNotFound:
+                        pass
 
             # If we failed out; indicate it.
             if failed_out:
