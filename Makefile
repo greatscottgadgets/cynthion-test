@@ -31,7 +31,7 @@ install-udev: 60-tycho.rules
 	sudo cp $< /etc/udev/rules.d/
 
 flash-blackmagic: blackmagic.bin
-	environment/bin/fwup-util $<
+	dfu-util -d 1d50:6018,:6017 -s 0x08002000:leave -D $<
 
 bootloader: bootloader.elf
 
