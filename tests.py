@@ -15,7 +15,8 @@ from tycho import *
 from eut import *
 from time import time, sleep
 import usb1
-import os, pickle
+import pickle
+import subprocess
 from greatfet import GreatFET
 from tps55288 import TPS55288, CDC
 
@@ -466,9 +467,14 @@ def test_clock():
     test_value("frequency", "CLK", frequency, 'Hz', expected)
 
 def run_command(cmd):
-    result = os.system(cmd + " > /dev/null 2>&1")
-    if result != 0:
-        raise RuntimeError(f"Command '{cmd}' failed with exit status {result}")
+    process = subprocess.run(cmd.split(" "),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT)
+    if process.returncode != 0:
+        raise RuntimeError(
+            f"Command '{cmd}' failed with exit status {process.returncode}.\n\n" +
+            "Output of failed command:\n\n" +
+            f"{process.stdout.decode().rstrip()}")
 
 def flash_bootloader():
     with task(f"Flashing Saturn-V bootloader to MCU via SWD"):
