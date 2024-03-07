@@ -43,10 +43,10 @@ make
 # Install udev rules:
 make install-udev
 
-# Put GreatFET in DFU mode and flash firmware:
+# Flash GreatFET firmware:
 make flash-greatfet
 
-# Put Black Magic Probe in DFU mode and flash firmware:
+# Flash Black Magic Probe firmware:
 make flash-blackmagic
 
 # Run self-check of test system:
