@@ -19,9 +19,10 @@ def info(text):
 def ask(text):
     print()
     print(
-        Fore.BLUE + " === Please " + text + " and press " +
-        Fore.GREEN + "PASS" + Fore.BLUE + " or " +
-        Fore.RED + "FAIL" + Fore.BLUE + " === " +
+        Style.BRIGHT +
+        Fore.CYAN + " === Please " + text + " and press " +
+        Fore.GREEN + "PASS" + Fore.CYAN + " or " +
+        Fore.RED + "FAIL" + Fore.CYAN + " === " +
         Style.RESET_ALL)
     print()
 
