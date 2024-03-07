@@ -196,8 +196,8 @@ def test():
     with group("Testing VBUS distribution"):
         configure_power_monitor(apollo)
         for (voltage, load_resistance, load_pin) in (
-                ( 6.7,  1.8, 'TEST_5V' ),
-                (20.0, 40.0, 'TEST_20V')):
+                ( 6.7, Range(1.782, 1.818), 'TEST_5V' ),
+                (20.0, Range( 39.6,  40.4), 'TEST_20V')):
             for passthrough in (False, True):
                 for input_port in ('CONTROL', 'AUX'):
                     test_vbus_distribution(
