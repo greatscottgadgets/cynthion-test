@@ -184,7 +184,16 @@ def test():
     with group("Testing Target-C to Target-A data passthrough"):
         connect_host_to('TARGET-C')
         FX2_EN.high()
-        test_fx2_present()
+        loader = test_fx2_present()
+        bus = loader.getBusNumber()
+        addr = loader.getDeviceAddress()
+        path = f"/dev/bus/usb/{bus:03d}/{addr:03d}"
+        with task("Loading FX2 firmware"):
+            run_command(f"/usr/sbin/fxload -t fx2lp -I fx2.ihx -D {path}")
+        device = find_device(0x04b4, 0x1003, None, "Cy-stream")
+        handle = device.open()
+        handle.claimInterface(0)
+        test_usb_hs_speed('TARGET-C', handle, 2, Range(35, 45))
         FX2_EN.low()
         connect_boost_supply_to(None)
 

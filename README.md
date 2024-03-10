@@ -37,6 +37,9 @@ This repository contains software for testing a [Cynthion](https://github.com/gr
 git clone --recurse-submodules https://github.com/greatscottgadgets/cynthion-test
 cd cynthion-test
 
+# Install pre-requisites
+sudo apt install make python3-venv gdb-multiarch dfu-util fxload
+
 # Build the test environment:
 make
 

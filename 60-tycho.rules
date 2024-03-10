@@ -24,3 +24,4 @@ ATTR{idVendor}=="1d50", ATTR{idProduct}=="6017", TAG+="uaccess"
 
 # Cypress FX2
 ATTR{idVendor}=="04b4", ATTR{idProduct}=="8613", TAG+="uaccess"
+ATTR{idVendor}=="04b4", ATTR{idProduct}=="1003", TAG+="uaccess"

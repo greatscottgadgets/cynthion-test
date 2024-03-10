@@ -703,12 +703,19 @@ def run_self_test(apollo):
 
 
 def test_usb_hs(port):
+
+    pids = {'CONTROL': 0x0001, 'AUX': 0x0002, 'TARGET-C': 0x0003}
+
     with group(f"Testing USB HS comms on {info(port)}"):
         connect_host_to(port)
+        device = find_device(0x1209, pids[port], "LUNA", "IN speed test")
+        handle = device.open()
+        handle.claimInterface(0)
+        test_usb_hs_speed(port, handle, 1, Range(46, 50))
+        return handle
 
-        pids = {'CONTROL': 0x0001, 'AUX': 0x0002, 'TARGET-C': 0x0003}
+def test_usb_hs_speed(port, handle, endpoint, expected):
 
-        BULK_ENDPOINT_NUMBER = 1
         TEST_DATA_SIZE = 1 * 1024 * 1024
         TEST_TRANSFER_SIZE = 16 * 1024
         TRANSFER_QUEUE_DEPTH = 16
@@ -749,20 +756,13 @@ def test_usb_hs(port):
             else:
                 failed_out = status
 
-        # Grab a reference to our device...
-        device = find_device(0x1209, pids[port], "LUNA", "IN speed test")
-        handle = device.open()
-
-        # ... and claim its bulk interface.
-        handle.claimInterface(0)
-
         # Submit a set of transfers to perform async comms with.
         active_transfers = []
         for _ in range(TRANSFER_QUEUE_DEPTH):
 
             # Allocate the transfer...
             transfer = handle.getTransfer()
-            transfer.setBulk(0x80 | BULK_ENDPOINT_NUMBER,
+            transfer.setBulk(0x80 | endpoint,
                              TEST_TRANSFER_SIZE,
                              callback=transfer_completed,
                              timeout=1000)
@@ -801,11 +801,8 @@ def test_usb_hs(port):
                     f"Test failed because a transfer {messages[failed_out]}.")
 
         speed = total_data_exchanged / elapsed / 1000000
-        expected = Range(46, 50)
 
         test_value("transfer rate", port, speed, 'MB/s', expected)
-
-        return handle
 
 def connect_tester_cc_sbu_to(port):
     if port is None:
