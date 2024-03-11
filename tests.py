@@ -529,7 +529,8 @@ def test_apollo_present():
     with group(f"Checking for Apollo"):
         find_device(0x1d50, 0x615c,
                     "Great Scott Gadgets",
-                    "Apollo Debugger")
+                    "Apollo Debugger",
+                    mcu_serial)
     with task("Connecting to Apollo"):
         apollo = ApolloDebugger()
     return apollo
