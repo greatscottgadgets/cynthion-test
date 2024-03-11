@@ -2,6 +2,7 @@ file bootloader.elf
 target extended-remote BLACKMAGIC_PORT
 monitor swdp_scan
 attach 1
+monitor serial
 monitor unlock_bootprot
 monitor erase_mass
 load

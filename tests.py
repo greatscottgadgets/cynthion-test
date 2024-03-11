@@ -475,14 +475,26 @@ def run_command(cmd):
             f"Command '{cmd}' failed with exit status {process.returncode}.\n\n" +
             "Output of failed command:\n\n" +
             f"{process.stdout.decode().rstrip()}")
+    return process
 
 def flash_bootloader():
-    with task(f"Flashing Saturn-V bootloader to MCU via SWD"):
-        script = open('flash-bootloader.gdb', 'w')
-        for line in open('flash-bootloader.template', 'r').readlines():
-            script.write(line.replace('BLACKMAGIC_PORT', blackmagic_port))
-        script.close()
-        run_command('gdb-multiarch --batch -x flash-bootloader.gdb')
+    with group(f"Flashing Saturn-V bootloader to MCU via SWD"):
+        with task("Running flash script"):
+            script = open('flash-bootloader.gdb', 'w')
+            for line in open('flash-bootloader.template', 'r').readlines():
+                script.write(line.replace('BLACKMAGIC_PORT', blackmagic_port))
+            script.close()
+            process = run_command('gdb-multiarch --batch -x flash-bootloader.gdb')
+        with task("Checking for MCU serial number"):
+            prefix = "Serial Number: 0x"
+            for line in process.stdout.decode().split('\n'):
+                if line.startswith(prefix):
+                    serial_string = line[len(prefix):].rstrip()
+                    break
+            else:
+                raise RuntimeError("MCU serial number not found in output:\n\n" +
+                    f"{process.stdout.decode().rstrip()}")
+        item(f"MCU serial number: {info(serial_string)}")
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
