@@ -633,7 +633,7 @@ def request_control_handoff_to_fpga(apollo):
         apollo.honor_fpga_adv()
         apollo.close()
 
-def check_device(device, mfg, prod):
+def check_device(device, mfg, prod, serial):
     global last_bus, last_addr
     bus = device.getBusNumber()
     addr = device.getDeviceAddress()
@@ -654,17 +654,24 @@ def check_device(device, mfg, prod):
                     if (string := device.getProduct()) != prod:
                         raise ValueError(
                             f"Wrong product string: '{string}'")
-            serial = device.getSerialNumber()
-            item(f"Device serial is {info(serial)}")
+            if serial is not None:
+                with task(f"Checking serial is {info(serial)}"):
+                    if (string := device.getSerialNumber()) != serial:
+                        raise ValueError(
+                            f"Wrong serial string: '{string}'")
+            else:
+                serial = device.getSerialNumber()
+                item(f"Device serial is {info(serial)}")
     last_bus = bus
     last_addr = addr
     return True
 
-def find_device(vid, pid, mfg=None, prod=None, timeout=3):
+def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
     with group(f"Looking for device with"):
         item(f"VID: {info(f'0x{vid:04x}')}, PID: {info(f'0x{pid:04x}')}")
         item(f"Manufacturer: {info(mfg)}")
         item(f"Product: {info(prod)}")
+        item(f"Serial: {info(serial)}")
 
         candidates = []
 
@@ -685,7 +692,7 @@ def find_device(vid, pid, mfg=None, prod=None, timeout=3):
             try:
                 while device := candidates.pop():
                     try:
-                        if check_device(device, mfg, prod):
+                        if check_device(device, mfg, prod, serial):
                             context.hotplugDeregisterCallback(callback_handle)
                             return device
                     except usb1.USBError:
