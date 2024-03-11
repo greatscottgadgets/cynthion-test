@@ -494,7 +494,23 @@ def flash_bootloader():
             else:
                 raise RuntimeError("MCU serial number not found in output:\n\n" +
                     f"{process.stdout.decode().rstrip()}")
-        item(f"MCU serial number: {info(serial_string)}")
+        serial_bytes = bytes.join(b'', [
+            int(serial_string[i:i+8], 16).to_bytes(4, byteorder='little')
+                for i in (0, 8, 16, 24)]) + b'\x00'
+        buffer = serial_bytes[0]
+        bits_left = 8
+        next_byte = 1
+        serial = ''
+        for count in range(26):
+             if bits_left < 5:
+                 buffer <<= 8
+                 buffer |= serial_bytes[next_byte] & 0xFF
+                 next_byte += 1
+                 bits_left += 8
+             bits_left -= 5
+             index = (buffer >> bits_left) & 0x1F
+             serial += chr(index + (ord('A') if index < 26 else ord('2')))
+        item(f"MCU serial number: {info(serial)}")
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
