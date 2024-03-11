@@ -511,6 +511,8 @@ def flash_bootloader():
              index = (buffer >> bits_left) & 0x1F
              serial += chr(index + (ord('A') if index < 26 else ord('2')))
         item(f"MCU serial number: {info(serial)}")
+        global mcu_serial
+        mcu_serial = serial
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
@@ -520,7 +522,8 @@ def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
         return find_device(0x1d50, 0x615c,
                            "Great Scott Gadgets",
-                           "Saturn-V")
+                           "Saturn-V",
+                           mcu_serial)
 
 def test_apollo_present():
     with group(f"Checking for Apollo"):
