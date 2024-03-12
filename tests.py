@@ -606,6 +606,9 @@ def test_flash_id(apollo, expected_mfg, expected_part):
             programmer = apollo.create_jtag_programmer(jtag)
             with task("Reading flash ID"):
                 mfg, part = programmer.read_flash_id()
+            with task("Reading flash UID"):
+                uid = programmer.read_flash_uid()
+        item(f"Flash UID is {info(f'0x{uid:08X}')}")
         with task(f"Checking manufacturer ID is {info(f'0x{expected_mfg:02X}')}"):
             if mfg != expected_mfg:
                 raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
