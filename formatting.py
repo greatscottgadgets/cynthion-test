@@ -16,6 +16,9 @@ def todo(text):
 def info(text):
     return Fore.CYAN + str(text) + Style.RESET_ALL
 
+def result(text):
+    print(info(text) + ", ", end="")
+
 def ask(text):
     print()
     print(

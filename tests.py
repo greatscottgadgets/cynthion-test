@@ -305,11 +305,12 @@ def check_cc_resistances(port):
 
 def check_cc_resistance(pin, expected):
     channel = f'{pin}_test'
-    mux_select(channel)
-    samples = gf.adc.read_samples(1000)
-    mux_disconnect()
-    voltage = (3.3 / 1024) * sum(samples) / len(samples)
-    item(f"Checking voltage on {info(channel)}: {info(f'{voltage:.2f} V')}")
+    with task(f"Checking voltage on {info(channel)}"):
+        mux_select(channel)
+        samples = gf.adc.read_samples(1000)
+        mux_disconnect()
+        voltage = (3.3 / 1024) * sum(samples) / len(samples)
+        result(f'{voltage:.2f} V')
     switch_resistance = 0.17
     resistance = - (voltage * 5.1) / (voltage - 3.3) - switch_resistance
     return test_value("resistance", pin, resistance, 'kΩ', expected)
@@ -508,25 +509,25 @@ def flash_bootloader():
             else:
                 raise RuntimeError("MCU serial number not found in output:\n\n" +
                     f"{process.stdout.decode().rstrip()}")
-        serial_bytes = bytes.join(b'', [
-            int(serial_string[i:i+8], 16).to_bytes(4, byteorder='little')
-                for i in (0, 8, 16, 24)]) + b'\x00'
-        buffer = serial_bytes[0]
-        bits_left = 8
-        next_byte = 1
-        serial = ''
-        for count in range(26):
-             if bits_left < 5:
-                 buffer <<= 8
-                 buffer |= serial_bytes[next_byte] & 0xFF
-                 next_byte += 1
-                 bits_left += 8
-             bits_left -= 5
-             index = (buffer >> bits_left) & 0x1F
-             serial += chr(index + (ord('A') if index < 26 else ord('2')))
-        item(f"MCU serial number: {info(serial)}")
-        global mcu_serial
-        mcu_serial = serial
+            serial_bytes = bytes.join(b'', [
+                int(serial_string[i:i+8], 16).to_bytes(4, byteorder='little')
+                    for i in (0, 8, 16, 24)]) + b'\x00'
+            buffer = serial_bytes[0]
+            bits_left = 8
+            next_byte = 1
+            serial = ''
+            for count in range(26):
+                 if bits_left < 5:
+                     buffer <<= 8
+                     buffer |= serial_bytes[next_byte] & 0xFF
+                     next_byte += 1
+                     bits_left += 8
+                 bits_left -= 5
+                 index = (buffer >> bits_left) & 0x1F
+                 serial += chr(index + (ord('A') if index < 26 else ord('2')))
+            global mcu_serial
+            mcu_serial = serial
+            result(serial)
 
 def flash_firmware():
     with task(f"Flashing Apollo to MCU via DFU"):
@@ -619,7 +620,7 @@ def test_flash_id(apollo, expected_mfg, expected_part):
                 mfg, part = programmer.read_flash_id()
             with task("Reading flash UID"):
                 uid = programmer.read_flash_uid()
-        item(f"Flash UID is {info(f'0x{uid:08X}')}")
+                result(f"0x{uid:08X}")
         with task(f"Checking manufacturer ID is {info(f'0x{expected_mfg:02X}')}"):
             if mfg != expected_mfg:
                 raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
@@ -722,9 +723,8 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
                 raise ValueError(
                     f"Wrong serial string: '{string}'")
     else:
-        serial = device.getSerialNumber()
-        item(f"Device serial is {info(serial)}")
-
+        with task(f"Reading serial number"):
+            result(device.getSerialNumber())
     return device
 
 def run_self_test(apollo):
