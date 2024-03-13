@@ -259,8 +259,8 @@ def check_for_shorts(port):
         connect_tester_to(None)
 
 def connect_grounds():
-    item("Connecting EUT ground to Tycho ground")
-    GND_EN.high()
+    with task("Connecting EUT ground to Tycho ground"):
+        GND_EN.high()
 
 def connect_tester_to(port):
     connect_usb('tester', port)
@@ -318,32 +318,33 @@ def test_leakage(port):
     test_vbus(port, Range(0, 0.05), discharge=True)
 
 def set_boost_supply(voltage, current):
-    item(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}")
-    boost.set_voltage(voltage)
-    boost.set_current_limit(current)
-    boost.enable()
-    boost.check_fault()
+    with task(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}"):
+        boost.set_voltage(voltage)
+        boost.set_current_limit(current)
+        boost.enable()
+        boost.check_fault()
 
 def connect_boost_supply_to(*ports):
     if ports == (None,):
-        item(f"Disconnecting DC-DC converter")
+        msg = "Disconnecting DC-DC converter"
     else:
-        item(f"Connecting DC-DC converter to {str.join(' and ', map(info, ports))}")
-    if 'CONTROL' in ports:
-        BOOST_VBUS_CON.high()
-    if 'AUX' in ports:
-        BOOST_VBUS_AUX.high()
-    if 'TARGET-C' in ports:
-        BOOST_VBUS_TC.high()
-    if 'CONTROL' not in ports:
-        BOOST_VBUS_CON.low()
-    if 'AUX' not in ports:
-        BOOST_VBUS_AUX.low()
-    if 'TARGET-C' not in ports:
-        BOOST_VBUS_TC.low()
-    boost.check_fault()
-    global boost_port
-    boost_port = ports[0]
+        msg = f"Connecting DC-DC converter to {str.join(' and ', map(info, ports))}"
+    with task(msg):
+        if 'CONTROL' in ports:
+            BOOST_VBUS_CON.high()
+        if 'AUX' in ports:
+            BOOST_VBUS_AUX.high()
+        if 'TARGET-C' in ports:
+            BOOST_VBUS_TC.high()
+        if 'CONTROL' not in ports:
+            BOOST_VBUS_CON.low()
+        if 'AUX' not in ports:
+            BOOST_VBUS_AUX.low()
+        if 'TARGET-C' not in ports:
+            BOOST_VBUS_TC.low()
+        boost.check_fault()
+        global boost_port
+        boost_port = ports[0]
 
 def test_boost_current(expected):
     V_DIV.low()
@@ -425,14 +426,14 @@ def test_voltage(channel, expected, discharge=False):
 def set_pin(pin, level):
     required = ('input' if level is None else
         'output high' if level else 'output low')
-    item(f"Setting pin {info(pin)} to {info(required)}")
-    pin = globals()[pin]
-    if level is None:
-        pin.input()
-    elif level:
-        pin.high()
-    else:
-        pin.low()
+    with task(f"Setting pin {info(pin)} to {info(required)}"):
+        pin = globals()[pin]
+        if level is None:
+            pin.input()
+        elif level:
+            pin.high()
+        else:
+            pin.low()
 
 def test_pin(pin, level):
     required = 'high' if level else 'low'
@@ -443,9 +444,9 @@ def test_pin(pin, level):
             raise ValueError(f"Pin {pin} is {found}, should be {required}")
 
 def disconnect_supply_and_discharge(port):
-    item(f"Disconnecting supply and discharging {info(port)}")
-    boost.disable()
-    discharge(port)
+    with task(f"Disconnecting supply and discharging {info(port)}"):
+        boost.disable()
+        discharge(port)
 
 def discharge(port):
     channel = vbus_channels[port]
@@ -599,9 +600,10 @@ def test_leds(apollo, device, leds, set_leds):
 
 def test_jtag_scan(apollo):
     with group("Checking JTAG scan chain"):
-        with apollo.jtag as jtag:
-            devices = [(device.idcode(), device.description())
-                for device in jtag.enumerate()]
+        with task("Reading JTAG scan chain"):
+            with apollo.jtag as jtag:
+                devices = [(device.idcode(), device.description())
+                    for device in jtag.enumerate()]
         for idcode, desc in devices:
             item(f"Found {info(f'0x{idcode:8X}')}: {info(desc)}")
         if devices != [(0x21111043, "Lattice LFE5U-12F ECP5 FPGA")]:
@@ -867,17 +869,18 @@ def test_usb_hs_speed_single(port, handle, endpoint):
 
 def connect_tester_cc_sbu_to(port):
     if port is None:
-        item("Disconnecting tester CC/SBU lines")
+        msg = "Disconnecting tester CC/SBU lines"
     else:
-        item(f"Connecting tester CC/SBU lines to {info(port)}")
-    SIG1_OEn.high()
-    SIG2_OEn.high()
-    if port is None:
-        return
-    SIG1_S.set_state(port == 'CONTROL')
-    SIG2_S.set_state(port == 'TARGET-C')
-    SIG1_OEn.low()
-    SIG2_OEn.low()
+        msg = f"Connecting tester CC/SBU lines to {info(port)}"
+    with task(msg):
+        SIG1_OEn.high()
+        SIG2_OEn.high()
+        if port is None:
+            return
+        SIG1_S.set_state(port == 'CONTROL')
+        SIG2_S.set_state(port == 'TARGET-C')
+        SIG1_OEn.low()
+        SIG2_OEn.low()
 
 def write_register(apollo, reg, value, verify=False):
     apollo.registers.register_write(reg, value)
@@ -909,17 +912,18 @@ def set_sbu_levels(apollo, port, levels):
 
 def connect_host_supply_to(*ports):
     if ports == (None,):
-        item("Disconnecting host supply")
+        msg = "Disconnecting host supply"
     else:
-        item(f"Connecting host supply to {str.join(' and ', map(info, ports))}")
-    if 'CONTROL' in ports:
-        HOST_VBUS_CON.high()
-    if 'AUX' in ports:
-        HOST_VBUS_AUX.high()
-    if 'CONTROL' not in ports:
-        HOST_VBUS_CON.low()
-    if 'AUX' not in ports:
-        HOST_VBUS_AUX.low()
+        msg = f"Connecting host supply to {str.join(' and ', map(info, ports))}"
+    with task(msg):
+        if 'CONTROL' in ports:
+            HOST_VBUS_CON.high()
+        if 'AUX' in ports:
+            HOST_VBUS_AUX.high()
+        if 'CONTROL' not in ports:
+            HOST_VBUS_CON.low()
+        if 'AUX' not in ports:
+            HOST_VBUS_AUX.low()
 
 def set_passthrough(apollo, port, enable):
     action = 'Enabling' if enable else 'Disabling'
