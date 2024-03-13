@@ -3,9 +3,23 @@ import colorama
 
 colorama.init()
 indent = 0
+numbering = False
+
+step = [0]
+
+def enable_numbering():
+    global numbering
+    numbering = True
 
 def msg(text, end, flush=False):
-    print(("  " * indent) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
+    if numbering:
+        step[-1] += 1
+        step_text = ".".join(str(s) for s in step)
+        step_text += " " * (11 - len(step_text))
+        prefix = Fore.YELLOW + step_text + Style.RESET_ALL + "│ "
+    else:
+        prefix = ""
+    print(prefix + ("  " * indent ) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
 
 def item(text):
     msg(text, "\n")
@@ -46,9 +60,11 @@ class group():
         global indent
         msg(self.text, ":\n")
         indent += 1
+        step.append(0)
         return self
     def __exit__(self, exc_type, exc_value, exc_tb):
         global indent
+        step.pop()
         indent -= 1
         return False
 

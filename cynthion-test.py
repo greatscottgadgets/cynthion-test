@@ -271,6 +271,8 @@ def test(user_present: bool):
 
 if __name__ == "__main__":
     user_present = 'unattended' not in sys.argv[1:]
+    if user_present:
+        enable_numbering()
     try:
         test(user_present)
         ok("All tests completed")
