@@ -98,10 +98,9 @@ def setup():
                     gf = GreatFET()
                 except Exception:
                     raise IOError("Could not connect to GreatFET. Check USB connections.")
-            with task("Reading GreatFET firmware version"):
-                version = gf.firmware_version()
             expected = "git-v2021.2.1-65-g8d8be6f"
             with task(f"Checking GreatFET firmware version is {info(expected)}"):
+                version = gf.firmware_version()
                 if version != expected:
                     raise ValueError(f"GreatFET firmware version is {version}, expected {expected}.")
         with task("Configuring GPIOs"):
@@ -614,20 +613,19 @@ def unconfigure_fpga(apollo):
             programmer.unconfigure()
 
 def test_flash_id(apollo, expected_mfg, expected_part):
-    with group("Checking flash chip ID"):
+    with group("Checking flash chip IDs"):
         with apollo.jtag as jtag:
             programmer = apollo.create_jtag_programmer(jtag)
-            with task("Reading flash ID"):
+            with task("Checking flash ID"):
                 mfg, part = programmer.read_flash_id()
+                result(f"{info(f'0x{mfg:02X}')}, {info(f'0x{part:06X}')}")
+                if mfg != expected_mfg:
+                    raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
+                if part != expected_part:
+                    raise ValueError(f"Wrong flash chip part ID: 0x{part:02X}")
             with task("Reading flash UID"):
                 uid = programmer.read_flash_uid()
                 result(f"0x{uid:08X}")
-        with task(f"Checking manufacturer ID is {info(f'0x{expected_mfg:02X}')}"):
-            if mfg != expected_mfg:
-                raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
-        with task(f"Checking part ID is {info(f'0x{expected_part:02X}')}"):
-            if part != expected_part:
-                raise ValueError(f"Wrong flash chip part ID: 0x{part:02X}")
 
 def flash_bitstream(apollo, filename):
     with group(f"Writing {info(filename)} to FPGA configuration flash"):
