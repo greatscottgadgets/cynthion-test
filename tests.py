@@ -653,46 +653,11 @@ def request_control_handoff_to_fpga(apollo):
         apollo.honor_fpga_adv()
         apollo.close()
 
-def check_device(device, mfg, prod, serial):
-    global last_bus, last_addr
-    bus = device.getBusNumber()
-    addr = device.getDeviceAddress()
-    # New device must be on the same bus as previously.
-    if last_bus is not None and bus != last_bus:
-        return False
-    # New device must have a different address to previous one.
-    if addr == last_addr:
-        return False
-    with group(f"Found at bus {info(bus)} address {info(addr)}"):
-            if mfg is not None:
-                with task(f"Checking manufacturer is {info(mfg)}"):
-                    if (string := device.getManufacturer()) != mfg:
-                        raise ValueError(
-                            f"Wrong manufacturer string: '{string}'")
-            if prod is not None:
-                with task(f"Checking product is {info(prod)}"):
-                    if (string := device.getProduct()) != prod:
-                        raise ValueError(
-                            f"Wrong product string: '{string}'")
-            if serial is not None:
-                with task(f"Checking serial is {info(serial)}"):
-                    if (string := device.getSerialNumber()) != serial:
-                        raise ValueError(
-                            f"Wrong serial string: '{string}'")
-            else:
-                serial = device.getSerialNumber()
-                item(f"Device serial is {info(serial)}")
-    last_bus = bus
-    last_addr = addr
-    return True
-
-def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
-    with group(f"Looking for device with"):
-        item(f"VID: {info(f'0x{vid:04x}')}, PID: {info(f'0x{pid:04x}')}")
-        item(f"Manufacturer: {info(mfg)}")
-        item(f"Product: {info(prod)}")
-        item(f"Serial: {info(serial)}")
-
+def await_device(vid, pid, timeout):
+    with task(f"Looking for device with " +
+              f"VID: {info(f'0x{vid:04x}')}, " +
+              f"PID: {info(f'0x{pid:04x}')}"):
+        global last_bus, last_addr
         candidates = []
 
         def callback(context, device, event):
@@ -710,14 +675,27 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
 
         while True:
             try:
+                # Loop through new candidates.
                 while device := candidates.pop():
                     try:
-                        if check_device(device, mfg, prod, serial):
-                            context.hotplugDeregisterCallback(callback_handle)
-                            return device
+                        # Get bus and address of candidate.
+                        bus = device.getBusNumber()
+                        addr = device.getDeviceAddress()
+                        # New device must be on the same bus as previously.
+                        if last_bus is not None and bus != last_bus:
+                            continue
+                        # New device must have a different address to previous one.
+                        if addr == last_addr:
+                            continue
+                        # This is the new device we're looking for.
+                        context.hotplugDeregisterCallback(callback_handle)
+                        last_bus = bus
+                        last_addr = addr
+                        return device
                     except usb1.USBError:
                         continue
             except IndexError:
+                # No more new candidates.
                 pass
             timeout = end - time()
             if timeout > 0:
@@ -725,6 +703,31 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
             else:
                 context.hotplugDeregisterCallback(callback_handle)
                 raise ValueError("Device not found")
+
+def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
+
+    device = await_device(vid, pid, timeout)
+
+    if mfg is not None:
+        with task(f"Checking manufacturer is {info(mfg)}"):
+            if (string := device.getManufacturer()) != mfg:
+                raise ValueError(
+                    f"Wrong manufacturer string: '{string}'")
+    if prod is not None:
+        with task(f"Checking product is {info(prod)}"):
+            if (string := device.getProduct()) != prod:
+                raise ValueError(
+                    f"Wrong product string: '{string}'")
+    if serial is not None:
+        with task(f"Checking serial is {info(serial)}"):
+            if (string := device.getSerialNumber()) != serial:
+                raise ValueError(
+                    f"Wrong serial string: '{string}'")
+    else:
+        serial = device.getSerialNumber()
+        item(f"Device serial is {info(serial)}")
+
+    return device
 
 def run_self_test(apollo):
     with group("Running self test"):
