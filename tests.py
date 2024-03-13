@@ -544,8 +544,8 @@ def test_apollo_present():
                     "Great Scott Gadgets",
                     "Apollo Debugger",
                     mcu_serial)
-    with task("Connecting to Apollo"):
-        apollo = ApolloDebugger()
+        with task("Connecting to Apollo"):
+            apollo = ApolloDebugger()
     return apollo
 
 def test_bridge_present():
