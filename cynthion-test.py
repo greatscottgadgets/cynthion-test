@@ -191,7 +191,7 @@ def test(user_present: bool):
         connect_boost_supply_to('CONTROL', 'TARGET-C')
         connect_host_to('TARGET-C')
         FX2_EN.high()
-        loader = test_fx2_present()
+        loader = find_device(0x04b4, 0x8613)
         bus = loader.getBusNumber()
         addr = loader.getDeviceAddress()
         path = f"/dev/bus/usb/{bus:03d}/{addr:03d}"
