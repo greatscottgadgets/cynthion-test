@@ -601,10 +601,11 @@ def test_jtag_scan(apollo):
             with apollo.jtag as jtag:
                 devices = [(device.idcode(), device.description())
                     for device in jtag.enumerate()]
-        for idcode, desc in devices:
-            item(f"Found {info(f'0x{idcode:8X}')}: {info(desc)}")
-        if devices != [(0x21111043, "Lattice LFE5U-12F ECP5 FPGA")]:
-            raise ValueError("JTAG scan chain did not include expected devices")
+            result(", ".join(
+                f"{info(f'0x{idcode:8X}')}: {info(desc)}"
+                    for idcode, desc in devices))
+            if devices != [(0x21111043, "Lattice LFE5U-12F ECP5 FPGA")]:
+                raise ValueError("JTAG scan chain did not include expected devices")
 
 def unconfigure_fpga(apollo):
     with apollo.jtag as jtag:
