@@ -2,7 +2,7 @@ from tests import *
 import ipdb
 import sys
 
-def test():
+def test(user_present: bool):
     # Set up test system.
     setup()
 
@@ -45,8 +45,8 @@ def test():
         # Finished testing with supply from TARGET-C.
         disconnect_supply_and_discharge('TARGET-C')
 
-    # Make sure TARGET-A cable is disconnected.
-    test_target_a_cable(False)
+    # Check whether TARGET-A cable is connected.
+    test_target_a_cable(not user_present)
 
     # Test supplying VBUS through CONTROL and AUX ports.
     for port in ('CONTROL', 'AUX'):
@@ -145,6 +145,9 @@ def test():
         configure_fpga(apollo, 'speedtest.bit')
         request_control_handoff_to_fpga(apollo)
         for port in ('TARGET-C', 'AUX'):
+            if port == 'TARGET-C' and not user_present:
+                # TARGET-A cable connected, skip TARGET-C speed test.
+                continue
             connect_boost_supply_to('CONTROL', port)
             test_usb_hs(port)
             connect_host_to(None)
@@ -171,12 +174,13 @@ def test():
     # Configure FPGA with test gateware again.
     configure_fpga(apollo, 'selftest.bit')
 
-    # Request the operator connect a cable to Target-A.
-    request("connect cable to EUT Target-A port")
+    if user_present:
+        # Request the operator connect a cable to Target-A.
+        request("connect cable to EUT Target-A port")
 
-    # Check that the Target-A cable is connected.
-    with group("Checking Target-A cable is connected"):
-        test_target_a_cable(True)
+        # Check that the Target-A cable is connected.
+        with group("Checking Target-A cable is connected"):
+            test_target_a_cable(True)
 
     # Check that the FX2 enumerates through the passthrough.
     with group("Testing Target-C to Target-A data passthrough"):
@@ -218,29 +222,37 @@ def test():
         test_leds(apollo, "debug", debug_leds, set_debug_leds)
         test_leds(apollo, "FPGA", fpga_leds, set_fpga_leds)
 
-        with group("Checking visual appearance of LEDs"):
-            # Turn on all LEDs.
-            set_fpga_leds(apollo, 0b111111)
-            set_debug_leds(apollo, 0b11111)
-            set_pin('REF_LED_EN', True)
+        if user_present:
+            with group("Checking visual appearance of LEDs"):
+                # Turn on all LEDs.
+                set_fpga_leds(apollo, 0b111111)
+                set_debug_leds(apollo, 0b11111)
+                set_pin('REF_LED_EN', True)
 
-            # Ask the user to check the LEDs appear correct.
-            request("check LEDs match reference")
+                # Ask the user to check the LEDs appear correct.
+                request("check LEDs match reference")
 
-            # Turn off LEDs.
-            set_pin('REF_LED_EN', False)
-            set_debug_leds(apollo, 0)
-            set_fpga_leds(apollo, 0)
+                # Turn off LEDs.
+                set_pin('REF_LED_EN', False)
+                set_debug_leds(apollo, 0)
+                set_fpga_leds(apollo, 0)
 
     # Request press of USER button, should be detected by FPGA.
-    test_user_button(apollo)
+    if user_present:
+        test_user_button(apollo)
 
     # Request press of RESET button, should cause analyzer to enumerate.
-    request('press the RESET button')
+    if user_present:
+        request('press the RESET button')
+    else:
+        simulate_reset_button()
     test_analyzer_present()
 
     # Request press of PROGRAM button, should cause Apollo to enumerate.
-    request('press the PROGRAM button')
+    if user_present:
+        request('press the PROGRAM button')
+    else:
+        simulate_program_button()
     test_apollo_present()
 
     # Power down the EUT.
@@ -249,8 +261,9 @@ def test():
         connect_host_supply_to(None)
 
 if __name__ == "__main__":
+    user_present = 'unattended' not in sys.argv[1:]
     try:
-        test()
+        test(user_present)
         ok("All tests completed")
     except KeyboardInterrupt:
         fail("Test stopped by user")
