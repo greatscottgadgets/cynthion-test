@@ -1187,16 +1187,14 @@ def test_target_a_cable(required):
     incorrect = "disconnected" if required else "connected"
     with group(f"Checking {info('TARGET-A')} cable is {info(correct)}"):
         try:
-            if required:
-                test_vbus('TARGET-A', Range(4.85, 5.05))
-            else:
-                with task(f"Pulling {info('TARGET-A')} up to {info('3.3 V')}"):
-                    mux_select('VBUS_TA')
-                    V_DIV.high()
-                test_voltage('TARGET_A_VBUS', Range(0, 0.1))
-                with task(f"Releasing {info('TARGET-A')} pullup"):
-                    V_DIV.low()
-                    mux_disconnect()
+            with task(f"Pulling {info('TARGET-A')} up to {info('3.3 V')}"):
+                mux_select('VBUS_TA')
+                V_DIV.high()
+            expected = Range(0.1, 1.0) if required else Range(0, 0.1)
+            test_voltage('TARGET_A_VBUS', expected)
+            with task(f"Releasing {info('TARGET-A')} pullup"):
+                V_DIV.low()
+                mux_disconnect()
             success = True
         except ValueError:
             success = False

@@ -176,12 +176,12 @@ def test():
 
     # Check that the Target-A cable is connected.
     with group("Checking Target-A cable is connected"):
-        set_boost_supply(5.0, 0.25)
-        connect_boost_supply_to('TARGET-C')
         test_target_a_cable(True)
 
     # Check that the FX2 enumerates through the passthrough.
     with group("Testing Target-C to Target-A data passthrough"):
+        set_boost_supply(5.0, 0.25)
+        connect_boost_supply_to('TARGET-C')
         connect_host_to('TARGET-C')
         FX2_EN.high()
         loader = test_fx2_present()
