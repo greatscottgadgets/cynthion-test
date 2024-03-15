@@ -1038,10 +1038,9 @@ def test_supply_selection(apollo):
             enable_supply_input(apollo, 'CONTROL', True)
             test_voltage('+5V', high)
 
-        with group("Swap back to powering from host"):
-            set_boost_supply(4.5, 0.25)
-            connect_host_supply_to('CONTROL')
-            connect_boost_supply_to(None)
+        with group("Switching back to DC-DC supply"):
+            connect_host_supply_to(None)
+            set_boost_supply(5.0, 0.25)
 
 def test_cc_sbu_control(apollo, port):
     begin_cc_measurement(port)
@@ -1160,7 +1159,13 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
         with group("Shutting down test"):
             if passthrough:
+                # Lower the DC-DC output voltage to 5V while still under load,
+                # so that the voltage falls rapidly, but keep the current
+                # limit set high enough not to trip with the load present.
+                set_boost_supply(5.0, 3.0)
+                # After removing the load, set the current limit back to normal.
                 set_pin(load_pin, False)
+                set_boost_supply(5.0, 0.25)
                 if apollo:
                     set_passthrough(apollo, input_port, False)
             connect_boost_supply_to(None)

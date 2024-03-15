@@ -184,8 +184,9 @@ def test(user_present: bool):
 
     # Check that the FX2 enumerates through the passthrough.
     with group("Testing Target-C to Target-A data passthrough"):
-        set_boost_supply(5.0, 0.25)
-        connect_boost_supply_to('TARGET-C')
+        # Supply is already connected to CONTROL.
+        # Now connect it to TARGET-C also.
+        connect_boost_supply_to('CONTROL', 'TARGET-C')
         connect_host_to('TARGET-C')
         FX2_EN.high()
         loader = test_fx2_present()
@@ -199,7 +200,8 @@ def test(user_present: bool):
         handle.claimInterface(0)
         test_usb_hs_speed('TARGET-C', handle, 2, Range(35, 45))
         FX2_EN.low()
-        connect_boost_supply_to(None)
+        # Connect supply to CONTROL alone, disconnecting from TARGET-C.
+        connect_boost_supply_to('CONTROL')
 
     with group("Reconnecting to Apollo"):
         connect_host_to('CONTROL')
@@ -216,6 +218,11 @@ def test(user_present: bool):
                     test_vbus_distribution(
                         apollo, voltage, load_resistance,
                         load_pin, passthrough, input_port)
+        with group("Switching EUT back to DC-DC supply"):
+            set_boost_supply(5.0, 0.25)
+            connect_boost_supply_to('CONTROL')
+            test_vbus('CONTROL', Range(4.85, 5.05))
+            connect_host_supply_to(None)
 
     # Test all LEDs.
     with group("Testing LEDs"):
