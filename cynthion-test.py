@@ -117,6 +117,9 @@ def test(user_present: bool):
         # Check the voltage now reaches the EUT's TARGET-A port.
         test_voltage('TARGET_A_VBUS', Range(4.85, 5.05))
 
+        # Disconnect TARGET-C supply.
+        connect_boost_supply_to('CONTROL')
+
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
         for (testpoint, minimum, maximum) in phy_supplies:
