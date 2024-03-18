@@ -8,11 +8,11 @@ supplies = (
 
 phy_supplies = (
     ('CONTROL_PHY_3V3', 3.25, 3.35),
-    ('CONTROL_PHY_1V8', 1.75, 1.85),
+    ('CONTROL_PHY_1V8', 1.70, 1.90),
     ('AUX_PHY_3V3',     3.25, 3.35),
-    ('AUX_PHY_1V8',     1.75, 1.85),
+    ('AUX_PHY_1V8',     1.70, 1.90),
     ('TARGET_PHY_3V3',  3.25, 3.35),
-    ('TARGET_PHY_1V8',  1.75, 1.85))
+    ('TARGET_PHY_1V8',  1.70, 1.90))
 
 fpga_leds = (
     ('D7_Vf', 0.65, 0.85), # OSVX0603C1E, Purple
