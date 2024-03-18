@@ -15,6 +15,7 @@ from tycho import *
 from eut import *
 from time import time, sleep
 import usb1
+import os
 import pickle
 import subprocess
 from greatfet import GreatFET
@@ -80,6 +81,9 @@ for name in gpio_allocations:
 
 def setup():
     with group("Setting up and checking test system"):
+        with group("Checking software dependencies"):
+            check_command("/usr/bin/gdb-multiarch")
+            check_command("/usr/sbin/fxload")
         with group("Checking for GreatFET"):
             try:
                 find_device(0x1d50, 0x60e6,
@@ -465,6 +469,12 @@ def test_clock():
     sleep(0.1)
     frequency = gf.apis.freq_count.count_cycles() * 10
     test_value("frequency", "CLK", frequency, 'Hz', expected)
+
+def check_command(path):
+    name = os.path.basename(path)
+    with task(f"Checking for {info(name)}"):
+        if not os.path.exists(path):
+            raise FileNotFoundError(f"No {name} at {path}. Install the {name} package.")
 
 def run_command(cmd):
     process = subprocess.run(cmd.split(" "),
