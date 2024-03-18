@@ -764,97 +764,100 @@ def test_usb_hs(port):
         handle = device.open()
         handle.claimInterface(0)
         test_usb_hs_speed(port, handle, 1, Range(46, 50))
-        return handle
+    return handle
 
 def test_usb_hs_speed(port, handle, endpoint, expected):
+    with task("Running speed test"):
+        speeds = [test_usb_hs_speed_single(port, handle, endpoint)
+            for repeat in range(3)]
+    test_value("transfer rate", port, max(speeds), 'MB/s', expected)
 
-        TEST_DATA_SIZE = 1 * 1024 * 1024
-        TEST_TRANSFER_SIZE = 16 * 1024
-        TRANSFER_QUEUE_DEPTH = 16
+def test_usb_hs_speed_single(port, handle, endpoint):
+    TEST_DATA_SIZE = 1 * 1024 * 1024
+    TEST_TRANSFER_SIZE = 16 * 1024
+    TRANSFER_QUEUE_DEPTH = 16
 
-        total_data_exchanged = 0
-        failed_out = False
+    total_data_exchanged = 0
+    failed_out = False
 
-        messages = {
-            1: "error'd out",
-            2: "timed out",
-            3: "was prematurely cancelled",
-            4: "was stalled",
-            5: "lost the device it was connected to",
-            6: "sent more data than expected."
-        }
+    messages = {
+        1: "error'd out",
+        2: "timed out",
+        3: "was prematurely cancelled",
+        4: "was stalled",
+        5: "lost the device it was connected to",
+        6: "sent more data than expected."
+    }
 
-        def should_terminate():
-            return (total_data_exchanged > TEST_DATA_SIZE) or failed_out
+    def should_terminate():
+        return (total_data_exchanged > TEST_DATA_SIZE) or failed_out
 
-        def transfer_completed(transfer: usb1.USBTransfer):
-            nonlocal total_data_exchanged, failed_out
+    def transfer_completed(transfer: usb1.USBTransfer):
+        nonlocal total_data_exchanged, failed_out
 
-            status = transfer.getStatus()
+        status = transfer.getStatus()
 
-            # If the transfer completed.
-            if status in (usb1.TRANSFER_COMPLETED,):
+        # If the transfer completed.
+        if status in (usb1.TRANSFER_COMPLETED,):
 
-                # Count the data exchanged in this packet...
-                total_data_exchanged += transfer.getActualLength()
+            # Count the data exchanged in this packet...
+            total_data_exchanged += transfer.getActualLength()
 
-                # ... and if we should terminate, abort.
-                if should_terminate():
-                    return
+            # ... and if we should terminate, abort.
+            if should_terminate():
+                return
 
-                # Otherwise, re-submit the transfer.
-                transfer.submit()
+            # Otherwise, re-submit the transfer.
+            transfer.submit()
 
-            else:
-                failed_out = status
+        else:
+            failed_out = status
 
-        # Submit a set of transfers to perform async comms with.
-        active_transfers = []
-        for _ in range(TRANSFER_QUEUE_DEPTH):
+    # Submit a set of transfers to perform async comms with.
+    active_transfers = []
+    for _ in range(TRANSFER_QUEUE_DEPTH):
 
-            # Allocate the transfer...
-            transfer = handle.getTransfer()
-            transfer.setBulk(0x80 | endpoint,
-                             TEST_TRANSFER_SIZE,
-                             callback=transfer_completed,
-                             timeout=1000)
+        # Allocate the transfer...
+        transfer = handle.getTransfer()
+        transfer.setBulk(0x80 | endpoint,
+                         TEST_TRANSFER_SIZE,
+                         callback=transfer_completed,
+                         timeout=1000)
 
-            # ... and store it.
-            active_transfers.append(transfer)
+        # ... and store it.
+        active_transfers.append(transfer)
 
-        with task("Running speed test"):
+    # Start our benchmark timer.
+    start_time = time()
 
-            # Start our benchmark timer.
-            start_time = time()
+    # Submit our transfers all at once.
+    for transfer in active_transfers:
+        transfer.submit()
 
-            # Submit our transfers all at once.
-            for transfer in active_transfers:
-                transfer.submit()
+    # Run our transfers until we get enough data.
+    while not should_terminate():
+        context.handleEvents()
 
-            # Run our transfers until we get enough data.
-            while not should_terminate():
-                context.handleEvents()
+    # Figure out how long this took us.
+    end_time = time()
+    elapsed = end_time - start_time
 
-            # Figure out how long this took us.
-            end_time = time()
-            elapsed = end_time - start_time
+    # Cancel all of our active transfers.
+    for transfer in active_transfers:
+        if transfer.isSubmitted():
+            try:
+                transfer.cancel()
+            except usb1.USBErrorNotFound:
+                pass
 
-            # Cancel all of our active transfers.
-            for transfer in active_transfers:
-                if transfer.isSubmitted():
-                    try:
-                        transfer.cancel()
-                    except usb1.USBErrorNotFound:
-                        pass
+    # If we failed out; indicate it.
+    if failed_out:
+        raise RuntimeError(
+            f"Test failed because a transfer {messages[failed_out]}.")
 
-            # If we failed out; indicate it.
-            if failed_out:
-                raise RuntimeError(
-                    f"Test failed because a transfer {messages[failed_out]}.")
+    speed = total_data_exchanged / elapsed / 1000000
 
-        speed = total_data_exchanged / elapsed / 1000000
-
-        test_value("transfer rate", port, speed, 'MB/s', expected)
+    return speed
 
 def connect_tester_cc_sbu_to(port):
     if port is None:
