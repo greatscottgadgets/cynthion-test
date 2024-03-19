@@ -71,8 +71,7 @@ def test(user_present: bool):
             check_cc_resistances(port)
 
     # Check 60MHz clock.
-    # Disabled due to loading clock line, pending Sasserides changes.
-    # test_clock()
+    test_clock()
 
     # Flash Saturn-V bootloader to MCU via SWD.
     flash_bootloader()
