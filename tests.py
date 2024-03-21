@@ -257,11 +257,11 @@ def connect_usb(source, port):
     with task(msg):
         D_OEn_1.high()
         states = {'host': 0, 'tester': 1}
-        D_S_1.set_state(states[source])
+        D_S_1.write(states[source])
         indices = {None: 0, 'TARGET-C': 1, 'AUX': 2, 'CONTROL': 3}
         index = indices[port]
-        D_C0.set_state((index & 1) != 0)
-        D_C1.set_state((index & 2) != 0)
+        D_C0.write((index & 1) != 0)
+        D_C1.write((index & 2) != 0)
         if port is None:
             return
         D_OEn_1.low()
@@ -853,8 +853,8 @@ def connect_tester_cc_sbu_to(port):
         SIG2_OEn.high()
         if port is None:
             return
-        SIG1_S.set_state(port == 'CONTROL')
-        SIG2_S.set_state(port == 'TARGET-C')
+        SIG1_S.write(port == 'CONTROL')
+        SIG2_S.write(port == 'TARGET-C')
         SIG1_OEn.low()
         SIG2_OEn.low()
 
