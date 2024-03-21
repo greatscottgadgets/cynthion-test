@@ -15,6 +15,7 @@ from ranges import *
 from tycho import *
 from eut import *
 from time import time, sleep
+import state
 import usb1
 import os
 import pickle
@@ -22,18 +23,7 @@ import subprocess
 from greatfet import GreatFET
 from tps55288 import TPS55288, CDC
 
-gf = None
-
 context = usb1.USBContext()
-last_bus = None
-last_addr = None
-
-boost_port = None
-
-calibration = dict(
-    voltage_scale_upper = 1.0,
-    voltage_scale_lower = 1.0
-)
 
 vbus_registers = {
     'CONTROL': REGISTER_CON_VBUS_EN,
@@ -94,24 +84,23 @@ def setup():
             except CynthionTestError:
                 raise GF1Error("GreatFET not detected. Check USB connections.")
             with task("Connecting to GreatFET"):
-                global gf
                 try:
-                    gf = GreatFET()
+                    state.gf = GreatFET()
                 except Exception:
                     raise GF1Error(
                         "Could not connect to GreatFET. Check USB connections.")
             expected = "git-v2021.2.1-65-g8d8be6f"
             with task(f"Checking GreatFET firmware version is {info(expected)}"):
-                version = gf.firmware_version()
+                version = state.gf.firmware_version()
                 if version != expected:
                     raise GF1Error(f"GreatFET firmware version is {version}, expected {expected}.")
         with task("Configuring GPIOs"):
-            for name, (position, state) in gpio_allocations.items():
-                pin = gf.gpio.get_pin(position)
+            for name, (position, output) in gpio_allocations.items():
+                pin = state.gf.gpio.get_pin(position)
                 globals()[name].inner = pin
-                if state is None:
+                if output is None:
                     pin.input()
-                elif state:
+                elif output:
                     pin.high()
                 else:
                     pin.low()
@@ -127,12 +116,11 @@ def setup():
                 D_TEST_PLUS.input()
                 mux_disconnect()
         with task("Configuring DC-DC converter"):
-            global boost
             BOOST_EN.high()
-            boost = TPS55288(gf)
-            if boost.read(CDC) != 0b11100000:
+            state.boost = TPS55288(state.gf)
+            if state.boost.read(CDC) != 0b11100000:
                 raise TychoError("Failed to communicate with DC-DC converter.")
-            boost.disable()
+            state.boost.disable()
         set_boost_supply(5.0, 0.1)
         with group("Checking for Black Magic Probe"):
             try:
@@ -140,8 +128,7 @@ def setup():
                                   "Black Magic Debug",
                                   "Black Magic Probe v1.9.1",
                                   timeout=0)
-                global blackmagic_port
-                blackmagic_port = (
+                state.blackmagic_port = (
                     "/dev/serial/by-id/usb-" +
                     bmp.getManufacturer().replace(' ', '_') + '_' +
                     bmp.getProduct().replace(' ', '_') + '_' +
@@ -153,13 +140,13 @@ def setup():
 
 
 def reset():
-    if gf is None:
+    if state.gf is None:
         return
-    for name, (position, state) in gpio_allocations.items():
+    for name, (position, output) in gpio_allocations.items():
         pin = globals()[name]
-        if state is None:
+        if output is None:
             pin.input()
-        elif state:
+        elif output:
             pin.high()
         else:
             pin.low()
@@ -184,20 +171,19 @@ def request(text):
 
 def load_calibration():
     with task("Loading calibration data"):
-        global calibration
         try:
             file = open('calibration.dat', 'rb')
         except FileNotFoundError:
             raise CalibrationError("No calibration file found")
         try:
-            calibration = pickle.load(file)
+            state.calibration = pickle.load(file)
         except Exception:
             raise CalibrationError("Loading calibration file failed")
         for field in (
             'voltage_scale_lower',
             'voltage_scale_upper',
         ):
-            if field not in calibration:
+            if field not in state.calibration:
                 raise CalibrationError(
                     f"Field '{field}' not found in calibration data")
 
@@ -302,7 +288,7 @@ def check_cc_resistance(pin, expected):
     channel = f'{pin}_test'
     with task(f"Checking voltage on {info(channel)}"):
         mux_select(channel)
-        samples = gf.adc.read_samples(1000)
+        samples = state.gf.adc.read_samples(1000)
         mux_disconnect()
         voltage = (3.3 / 1024) * sum(samples) / len(samples)
         result(f'{voltage:.2f} V')
@@ -315,10 +301,10 @@ def test_leakage(port):
 
 def set_boost_supply(voltage, current):
     with task(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}"):
-        boost.set_voltage(voltage)
-        boost.set_current_limit(current)
-        boost.enable()
-        boost.check_fault()
+        state.boost.set_voltage(voltage)
+        state.boost.set_current_limit(current)
+        state.boost.enable()
+        state.boost.check_fault()
 
 def connect_boost_supply_to(*ports):
     if ports == (None,):
@@ -338,9 +324,8 @@ def connect_boost_supply_to(*ports):
             BOOST_VBUS_AUX.low()
         if 'TARGET-C' not in ports:
             BOOST_VBUS_TC.low()
-        boost.check_fault()
-        global boost_port
-        boost_port = ports[0]
+        state.boost.check_fault()
+        state.boost_port = ports[0]
 
 def test_boost_current(expected):
     V_DIV.low()
@@ -352,7 +337,7 @@ def test_boost_current(expected):
     shunt_voltage = cdc_voltage * 0.05
     shunt_resistance = 0.01
     shunt_current = max(shunt_voltage / shunt_resistance - 0.06, 0)
-    channel = vbus_channels[boost_port]
+    channel = vbus_channels[state.boost_port]
     return test_value("current", channel, shunt_current, 'A', expected)
 
 def mux_select(channel):
@@ -399,13 +384,13 @@ def measure_voltage(expected):
     if expected.hi <= 6.6:
         V_DIV_MULT.low()
         pulldown = 100
-        cal = calibration['voltage_scale_lower']
+        cal = state.calibration['voltage_scale_lower']
     else:
         V_DIV_MULT.high()
         pulldown = (100 * 22) / (100 + 22)
-        cal = calibration['voltage_scale_upper']
+        cal = state.calibration['voltage_scale_upper']
     scale = 3.3 / 1024 * (pulldown + pullup) / pulldown
-    samples = gf.adc.read_samples(1000)
+    samples = state.gf.adc.read_samples(1000)
     voltage = cal * scale * sum(samples) / len(samples)
     return voltage
 
@@ -441,7 +426,7 @@ def test_pin(pin, level):
 
 def disconnect_supply_and_discharge(port):
     with task(f"Disconnecting supply and discharging {info(port)}"):
-        boost.disable()
+        state.boost.disable()
         discharge(port)
 
 def discharge(port):
@@ -464,10 +449,10 @@ def test_clock():
     tolerance_ppm = 100
     tolerance_hz = target_hz * tolerance_ppm / 1e6
     expected = target_hz + Range(-tolerance_hz, tolerance_hz)
-    gf.apis.freq_count.setup_counters(reference_hz)
-    gf.apis.freq_count.setup_counters(reference_hz)
+    state.gf.apis.freq_count.setup_counters(reference_hz)
+    state.gf.apis.freq_count.setup_counters(reference_hz)
     sleep(0.1)
-    frequency = gf.apis.freq_count.count_cycles() * 10
+    frequency = state.gf.apis.freq_count.count_cycles() * 10
     test_value("frequency", "CLK", frequency, 'Hz', expected)
 
 def check_command(path):
@@ -492,7 +477,8 @@ def flash_bootloader():
         with task("Running flash script"):
             script = open('flash-bootloader.gdb', 'w')
             for line in open('flash-bootloader.template', 'r').readlines():
-                script.write(line.replace('BLACKMAGIC_PORT', blackmagic_port))
+                script.write(line.replace('BLACKMAGIC_PORT', 
+                                          state.blackmagic_port))
             script.close()
             process = run_command('gdb-multiarch --batch -x flash-bootloader.gdb')
         with task("Checking for MCU serial number"):
@@ -521,8 +507,7 @@ def flash_bootloader():
                  bits_left -= 5
                  index = (buffer >> bits_left) & 0x1F
                  serial += chr(index + (ord('A') if index < 26 else ord('2')))
-            global mcu_serial
-            mcu_serial = serial
+            state.mcu_serial = serial
             result(serial)
 
 def flash_firmware():
@@ -534,14 +519,14 @@ def test_saturnv_present():
         return find_device(0x1d50, 0x615c,
                            "Great Scott Gadgets",
                            "Saturn-V",
-                           mcu_serial)
+                           state.mcu_serial)
 
 def test_apollo_present():
     with group(f"Checking for Apollo"):
         find_device(0x1d50, 0x615c,
                     "Great Scott Gadgets",
                     "Apollo Debugger",
-                    mcu_serial)
+                    state.mcu_serial)
         with task("Connecting to Apollo"):
             apollo = ApolloDebugger()
     return apollo
@@ -652,7 +637,6 @@ def await_device(vid, pid, timeout):
     with task(f"Looking for device with " +
               f"VID: {info(f'0x{vid:04x}')}, " +
               f"PID: {info(f'0x{pid:04x}')}"):
-        global last_bus, last_addr
         candidates = []
 
         def callback(context, device, event):
@@ -677,15 +661,15 @@ def await_device(vid, pid, timeout):
                         bus = device.getBusNumber()
                         addr = device.getDeviceAddress()
                         # New device must be on the same bus as previously.
-                        if last_bus is not None and bus != last_bus:
+                        if state.last_bus is not None and bus != state.last_bus:
                             continue
                         # New device must have a different address to previous one.
-                        if addr == last_addr:
+                        if addr == state.last_addr:
                             continue
                         # This is the new device we're looking for.
                         context.hotplugDeregisterCallback(callback_handle)
-                        last_bus = bus
-                        last_addr = addr
+                        state.last_bus = bus
+                        state.last_addr = addr
                         return device
                     except usb1.USBError:
                         continue
@@ -1135,7 +1119,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
         sleep(0.003)
 
-        boost.check_fault()
+        state.boost.check_fault()
 
         if apollo:
             with group("Checking voltage and current on supply port"):
