@@ -33,6 +33,12 @@ for code, name in (
 ):
     globals()[name] = type(name, (CynthionTestError,), {'code': code})
 
+# Override __init__ method in GF1Error to mark the GF1 no longer usable.
+def __init__(self, msg):
+    CynthionTestError.__init__(self, msg)
+    state.gf = None
+GF1Error.__init__ = __init__
+
 """
 Takes an exception and if it is not a CynthionTestError, raises a
 suitable CynthionTestError wrapper.
