@@ -33,6 +33,11 @@ for code, name in (
 ):
     globals()[name] = type(name, (CynthionTestError,), {'code': code})
 
+# Text to identify USB device at fault on USB errors.
+USBCommsError.device = "EUT"
+GF1Error.device = "GreatFET"
+BMPError.device = "Black Magic Probe"
+
 # Override __init__ method in GF1Error to mark the GF1 no longer usable.
 def __init__(self, msg):
     CynthionTestError.__init__(self, msg)
@@ -50,7 +55,8 @@ def wrap_exception(exc, usb_err_type=None):
     elif isinstance(exc, KeyboardInterrupt):
         raise TestStoppedError("Test stopped by keyboard interrupt.")
     elif usb_err_type is not None and isinstance(exc, usb_exceptions):
-        raise usb_err_type("USB error: " + str(exc))
+        raise usb_err_type(
+            f"{usb_err_type.device} USB error: {exc.strerror}")
     else:
         raise UnexpectedError(str(exc))
 
