@@ -64,8 +64,21 @@ class Pin:
     def __init__(self, inner):
         self.inner = inner
 
-    def __getattr__(self, name):
-        return getattr(self.inner, name)
+    def high(self):
+        with error_conversion(GF1Error):
+            self.inner.high()
+
+    def low(self):
+        with error_conversion(GF1Error):
+            self.inner.low()
+
+    def input(self):
+        with error_conversion(GF1Error):
+            return self.inner.input()
+
+    def write(self, high):
+        with error_conversion(GF1Error):
+            self.inner.write(high)
 
 for name in gpio_allocations:
     globals()[name] = Pin(None)
@@ -91,12 +104,14 @@ def setup():
                         "Could not connect to GreatFET. Check USB connections.")
             expected = "git-v2021.2.1-65-g8d8be6f"
             with task(f"Checking GreatFET firmware version is {info(expected)}"):
-                version = state.gf.firmware_version()
+                with error_conversion(GF1Error):
+                    version = state.gf.firmware_version()
                 if version != expected:
                     raise GF1Error(f"GreatFET firmware version is {version}, expected {expected}.")
         with task("Configuring GPIOs"):
             for name, (position, output) in gpio_allocations.items():
-                pin = state.gf.gpio.get_pin(position)
+                with error_conversion(GF1Error):
+                    pin = state.gf.gpio.get_pin(position)
                 globals()[name].inner = pin
                 if output is None:
                     pin.input()
@@ -288,7 +303,8 @@ def check_cc_resistance(pin, expected):
     channel = f'{pin}_test'
     with task(f"Checking voltage on {info(channel)}"):
         mux_select(channel)
-        samples = state.gf.adc.read_samples(1000)
+        with error_conversion(GF1Error):
+            samples = state.gf.adc.read_samples(1000)
         mux_disconnect()
         voltage = (3.3 / 1024) * sum(samples) / len(samples)
         result(f'{voltage:.2f} V')
@@ -449,10 +465,11 @@ def test_clock():
     tolerance_ppm = 100
     tolerance_hz = target_hz * tolerance_ppm / 1e6
     expected = target_hz + Range(-tolerance_hz, tolerance_hz)
-    state.gf.apis.freq_count.setup_counters(reference_hz)
-    state.gf.apis.freq_count.setup_counters(reference_hz)
-    sleep(0.1)
-    frequency = state.gf.apis.freq_count.count_cycles() * 10
+    with error_conversion(GF1Error):
+        state.gf.apis.freq_count.setup_counters(reference_hz)
+        state.gf.apis.freq_count.setup_counters(reference_hz)
+        sleep(0.1)
+        frequency = state.gf.apis.freq_count.count_cycles() * 10
     test_value("frequency", "CLK", frequency, 'Hz', expected)
 
 def check_command(path):
