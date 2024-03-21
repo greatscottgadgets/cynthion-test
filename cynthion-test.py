@@ -274,12 +274,11 @@ if __name__ == "__main__":
     if user_present:
         enable_numbering()
     try:
-        test(user_present)
-        ok("All tests completed")
-    except KeyboardInterrupt:
-        fail("Test stopped by user")
-    except Exception as e:
-        fail(str(e))
+        with error_conversion():
+            test(user_present)
+            ok("All tests completed")
+    except CynthionTestError as error:
+        fail(error)
         if 'debug' in sys.argv[1:]:
             ipdb.post_mortem()
     reset()

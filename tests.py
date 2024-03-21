@@ -10,6 +10,7 @@ from luna.gateware.applets.flash_bridge import FlashBridgeConnection
 from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
 from formatting import *
+from errors import *
 from ranges import *
 from tycho import *
 from eut import *
@@ -90,19 +91,20 @@ def setup():
                             "Great Scott Gadgets",
                             "GreatFET",
                             timeout=0)
-            except Exception:
-                raise IOError("GreatFET not detected. Check USB connections.")
+            except CynthionTestError:
+                raise GF1Error("GreatFET not detected. Check USB connections.")
             with task("Connecting to GreatFET"):
                 global gf
                 try:
                     gf = GreatFET()
                 except Exception:
-                    raise IOError("Could not connect to GreatFET. Check USB connections.")
+                    raise GF1Error(
+                        "Could not connect to GreatFET. Check USB connections.")
             expected = "git-v2021.2.1-65-g8d8be6f"
             with task(f"Checking GreatFET firmware version is {info(expected)}"):
                 version = gf.firmware_version()
                 if version != expected:
-                    raise ValueError(f"GreatFET firmware version is {version}, expected {expected}.")
+                    raise GF1Error(f"GreatFET firmware version is {version}, expected {expected}.")
         with task("Configuring GPIOs"):
             for name, (position, state) in gpio_allocations.items():
                 pin = gf.gpio.get_pin(position)
@@ -119,8 +121,8 @@ def setup():
                 mux_select('D_TEST_PLUS')
             try:
                 test_voltage('D_TEST_PLUS', Range(3.2, 3.4))
-            except ValueError:
-                raise IOError("24V supply not detected. Check supply.")
+            except CynthionTestError:
+                raise PowerSupplyError("24V supply not detected. Check supply.")
             with task(f"Releasing {info('D_TEST_PLUS')} drive"):
                 D_TEST_PLUS.input()
                 mux_disconnect()
@@ -129,7 +131,7 @@ def setup():
             BOOST_EN.high()
             boost = TPS55288(gf)
             if boost.read(CDC) != 0b11100000:
-                raise IOError("Failed to communicate with DC-DC converter.")
+                raise TychoError("Failed to communicate with DC-DC converter.")
             boost.disable()
         set_boost_supply(5.0, 0.1)
         with group("Checking for Black Magic Probe"):
@@ -145,8 +147,9 @@ def setup():
                     bmp.getProduct().replace(' ', '_') + '_' +
                     bmp.getSerialNumber() + '-if00')
                 del bmp
-            except Exception:
-                raise IOError("Black Magic Probe not detected. Check USB connections.")
+            except CynthionTestError:
+                raise BMPError(
+                    "Black Magic Probe not detected. Check USB connections.")
 
 
 def reset():
@@ -174,17 +177,10 @@ def request(text):
     ask(text)
     while True:
         if fail_pressed():
-            raise RuntimeError("Test failed at user request")
+            raise FailButtonError("User pressed the FAIL button")
         elif pass_pressed():
             return
         sleep(0.001)
-
-class CalibrationError(Exception):
-    def __init__(self, msg):
-        self.msg = msg
-
-    def __str__(self):
-        return self.msg + ". Please run calibration."
 
 def load_calibration():
     with task("Loading calibration data"):
@@ -388,11 +384,11 @@ def test_value(qty, src, value, unit, expected, ignore=False):
     if value < expected.lo:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too low on {src}: {value:.3f} {unit}, minimum was {expected.lo:.2f} {unit}")
+            raise ValueLowError(f"{qty} too low on {src}: {value:.3f} {unit}, minimum was {expected.lo:.2f} {unit}")
     elif value > expected.hi:
         item(message + Fore.RED + result)
         if not ignore:
-            raise ValueError(f"{qty} too high on {src}: {value:.3f} {unit}, maximum was {expected.hi:.2f} {unit}")
+            raise ValueHighError(f"{qty} too high on {src}: {value:.3f} {unit}, maximum was {expected.hi:.2f} {unit}")
     else:
         item(message + Fore.GREEN + result)
     return value
@@ -441,7 +437,7 @@ def test_pin(pin, level):
         value = globals()[pin].input()
         found = 'high' if value else 'low'
         if value != level:
-            raise ValueError(f"Pin {pin} is {found}, should be {required}")
+            raise ValueWrongError(f"Pin {pin} is {found}, should be {required}")
 
 def disconnect_supply_and_discharge(port):
     with task(f"Disconnecting supply and discharging {info(port)}"):
@@ -478,14 +474,14 @@ def check_command(path):
     name = os.path.basename(path)
     with task(f"Checking for {info(name)}"):
         if not os.path.exists(path):
-            raise FileNotFoundError(f"No {name} at {path}. Install the {name} package.")
+            raise DependencyError(f"No {name} at {path}. Install the {name} package.")
 
 def run_command(cmd):
     process = subprocess.run(cmd.split(" "),
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT)
     if process.returncode != 0:
-        raise RuntimeError(
+        raise CommandError(
             f"Command '{cmd}' failed with exit status {process.returncode}.\n\n" +
             "Output of failed command:\n\n" +
             f"{process.stdout.decode().rstrip()}")
@@ -506,7 +502,8 @@ def flash_bootloader():
                     serial_string = line[len(prefix):].rstrip()
                     break
             else:
-                raise RuntimeError("MCU serial number not found in output:\n\n" +
+                raise CommandError(
+                    "MCU serial number not found in output:\n\n" +
                     f"{process.stdout.decode().rstrip()}")
             serial_bytes = bytes.join(b'', [
                 int(serial_string[i:i+8], 16).to_bytes(4, byteorder='little')
@@ -604,7 +601,7 @@ def test_jtag_scan(apollo):
                 f"{info(f'0x{idcode:8X}')}: {info(desc)}"
                     for idcode, desc in devices))
             if devices != [(0x21111043, "Lattice LFE5U-12F ECP5 FPGA")]:
-                raise ValueError("JTAG scan chain did not include expected devices")
+                raise ValueWrongError("JTAG scan chain did not include expected devices")
 
 def unconfigure_fpga(apollo):
     with apollo.jtag as jtag:
@@ -620,9 +617,9 @@ def test_flash_id(apollo, expected_mfg, expected_part):
                 mfg, part = programmer.read_flash_id()
                 result(f"{info(f'0x{mfg:02X}')}, {info(f'0x{part:06X}')}")
                 if mfg != expected_mfg:
-                    raise ValueError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
+                    raise ValueWrongError(f"Wrong flash chip manufacturer ID: 0x{mfg:02X}")
                 if part != expected_part:
-                    raise ValueError(f"Wrong flash chip part ID: 0x{part:02X}")
+                    raise ValueWrongError(f"Wrong flash chip part ID: 0x{part:02X}")
             with task("Reading flash UID"):
                 uid = programmer.read_flash_uid()
                 result(f"0x{uid:08X}")
@@ -700,7 +697,7 @@ def await_device(vid, pid, timeout):
                 context.handleEventsTimeout(timeout)
             else:
                 context.hotplugDeregisterCallback(callback_handle)
-                raise ValueError("Device not found")
+                raise USBCommsError("Device not found")
 
 def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
 
@@ -709,17 +706,17 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
     if mfg is not None:
         with task(f"Checking manufacturer is {info(mfg)}"):
             if (string := device.getManufacturer()) != mfg:
-                raise ValueError(
+                raise ValueWrongError(
                     f"Wrong manufacturer string: '{string}'")
     if prod is not None:
         with task(f"Checking product is {info(prod)}"):
             if (string := device.getProduct()) != prod:
-                raise ValueError(
+                raise ValueWrongError(
                     f"Wrong product string: '{string}'")
     if serial is not None:
         with task(f"Checking serial is {info(serial)}"):
             if (string := device.getSerialNumber()) != serial:
-                raise ValueError(
+                raise ValueWrongError(
                     f"Wrong serial string: '{string}'")
     else:
         with task(f"Reading serial number"):
@@ -745,14 +742,14 @@ def run_self_test(apollo):
             with task(description):
                 try:
                     method(apollo)
-                except Exception as e:
-                    raise RuntimeError(f"{description} self-test failed")
+                except Exception:
+                    raise SelfTestError(f"{description} self-test failed")
         with task("PMOD I/O"):
             for value in (0x00, 0xFF, 0xAA, 0x55):
                 write_register(apollo, REGISTER_PMOD_A_OUT, value)
                 readback = read_register(apollo, REGISTER_PMOD_B_IN)
                 if readback != value:
-                    raise ValueError(
+                    raise SelfTestError(
                         f"Wrote 0x{value:02X} to PMOD A "
                         f"but read back 0x{readback:02X} from PMOD B")
 
@@ -855,7 +852,7 @@ def test_usb_hs_speed_single(port, handle, endpoint):
 
     # If we failed out; indicate it.
     if failed_out:
-        raise RuntimeError(
+        raise USBCommsError(
             f"Test failed because a transfer {messages[failed_out]}.")
 
     speed = total_data_exchanged / elapsed / 1000000
@@ -882,7 +879,7 @@ def write_register(apollo, reg, value, verify=False):
     if verify:
         readback = apollo.registers.register_read(reg)
         if readback != value:
-            raise ValueError(
+            raise RegisterError(
                 f"Wrote 0x{value:02X} to register {reg} "
                 f"but read back 0x{readback:02X}")
 
@@ -1194,11 +1191,11 @@ def test_user_button(apollo):
         with task(f"Checking {button} is released"):
             write_register(apollo, REGISTER_BUTTON_USER, 0)
             if read_register(apollo, REGISTER_BUTTON_USER):
-                raise ValueError(f"USER button press detected unexpectedly")
+                raise ButtonError(f"USER button press detected unexpectedly")
         request("press the USER button")
         with task(f"Checking {button} was pressed"):
             if not read_register(apollo, REGISTER_BUTTON_USER):
-                raise ValueError(f"USER button press not detected")
+                raise ButtonError(f"USER button press not detected")
 
 def request_control_handoff_to_mcu(handle):
     with task(f"Requesting FPGA handoff {info('CONTROL')} port to MCU"):
@@ -1219,8 +1216,8 @@ def test_target_a_cable(required):
                 V_DIV.low()
                 mux_disconnect()
             success = True
-        except ValueError:
+        except CynthionTestError:
             success = False
     if not success:
-        raise ValueError(
+        raise CableError(
             f"TARGET-A cable appears to be {incorrect}, should be {correct}")

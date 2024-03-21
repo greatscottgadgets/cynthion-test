@@ -34,10 +34,9 @@ def calibrate():
 
 if __name__ == "__main__":
     try:
-        calibrate()
-        ok("Calibration complete")
-    except KeyboardInterrupt:
-        fail("Calibration stopped by user")
-    except Exception as e:
-        fail(str(e))
+        with error_conversion():
+            calibrate()
+            ok("Calibration complete")
+    except CynthionTestError as error:
+        fail(error)
     reset()

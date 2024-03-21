@@ -1,4 +1,5 @@
 from colorama import Fore, Back, Style
+from errors import wrap_exception
 import colorama
 import state
 
@@ -44,9 +45,15 @@ def ok(text):
     print(Fore.GREEN + "PASS" + Style.RESET_ALL + ": " + text)
     print()
 
-def fail(text):
+def fail(err):
+    if state.numbering:
+        step_text = err.step + '-'
+    else:
+        step_text = ''
     print()
-    print(Fore.RED + "FAIL" + Style.RESET_ALL + ": " + text)
+    print(Style.BRIGHT + Fore.RED + "FAIL " + Fore.YELLOW + step_text + err.code + Style.RESET_ALL)
+    print()
+    print(err.msg)
     print()
 
 class group():
@@ -58,6 +65,10 @@ class group():
         state.step.append(0)
         return self
     def __exit__(self, exc_type, exc_value, exc_tb):
+        # If we got an exception, wrap it into a CynthionTestError now,
+        # before we lose the step information.
+        if exc_value is not None:
+            wrap_exception(exc_value)
         state.step.pop()
         state.indent -= 1
         return False

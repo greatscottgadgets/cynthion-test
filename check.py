@@ -6,10 +6,9 @@ def check():
 
 if __name__ == "__main__":
     try:
-        check()
-        ok("Self-check complete")
-    except KeyboardInterrupt:
-        fail("Self-check stopped by user")
-    except Exception as e:
-        fail(str(e))
+        with error_conversion():
+            check()
+            ok("Self-check complete")
+    except CynthionTestError as error:
+        fail(error)
     reset()
