@@ -1,25 +1,21 @@
 from colorama import Fore, Back, Style
 import colorama
+import state
 
 colorama.init()
-indent = 0
-numbering = False
-
-step = [0]
 
 def enable_numbering():
-    global numbering
-    numbering = True
+    state.numbering = True
 
 def msg(text, end, flush=False):
-    if numbering:
-        step[-1] += 1
-        step_text = ".".join(str(s) for s in step)
+    if state.numbering:
+        state.step[-1] += 1
+        step_text = ".".join(str(s) for s in state.step)
         step_text += " " * (11 - len(step_text))
         prefix = Fore.YELLOW + step_text + Style.RESET_ALL + "│ "
     else:
         prefix = ""
-    print(prefix + ("  " * indent ) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
+    print(prefix + ("  " * state.indent ) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
 
 def item(text):
     msg(text, "\n")
@@ -57,15 +53,13 @@ class group():
     def __init__(self, text):
         self.text = text
     def __enter__(self):
-        global indent
         msg(self.text, ":\n")
-        indent += 1
-        step.append(0)
+        state.indent += 1
+        state.step.append(0)
         return self
     def __exit__(self, exc_type, exc_value, exc_tb):
-        global indent
-        step.pop()
-        indent -= 1
+        state.step.pop()
+        state.indent -= 1
         return False
 
 class task():
