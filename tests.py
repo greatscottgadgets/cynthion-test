@@ -207,8 +207,24 @@ def load_calibration():
                 raise CalibrationError(
                     f"Field '{field}' not found in calibration data")
 
-def short_check(a, b, port):
-    return group(f"Checking for {info(a)} to {info(b)} short on {info(port)}")
+class short_check():
+
+    def __init__(self, a, b, port):
+        super().__init__()
+        self.ident = (a, b, port)
+        self.group = group(f"Checking for {info(a)} to {info(b)} short on {info(port)}")
+
+    def __enter__(self):
+        self.group.__enter__()
+
+    def __exit__(self, exc_type, exc_value, exc_tb):
+        self.group.__exit__(exc_type, exc_value, exc_tb)
+        if exc_value is not None:
+            if isinstance(exc_value, ValueHighError):
+                a, b, port = self.ident
+                raise ShortError(f"Pins {a} and {b} on EUT {port} port appear to be shorted to each other.")
+            else:
+                wrap_exception(exc_value, GF1Error)
 
 def check_for_shorts(port):
     with group(f"Checking for shorts on {info(port)}"):

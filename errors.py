@@ -24,6 +24,7 @@ for code, name in (
     ('LOW', 'ValueLowError'),
     ('HIG', 'ValueHighError'),
     ('WRG', 'ValueWrongError'),
+    ('SHT', 'ShortError'),
     ('CMD', 'CommandError'),
     ('SLF', 'SelfTestError'),
     ('REG', 'RegisterError'),
