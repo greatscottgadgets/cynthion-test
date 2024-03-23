@@ -190,18 +190,8 @@ def test(user_present: bool):
         # Now connect it to TARGET-C also.
         connect_boost_supply_to('CONTROL', 'TARGET-C')
         connect_host_to('TARGET-C')
-        FX2_EN.high()
-        loader = find_device(0x04b4, 0x8613)
-        bus = loader.getBusNumber()
-        addr = loader.getDeviceAddress()
-        path = f"/dev/bus/usb/{bus:03d}/{addr:03d}"
-        with task("Loading FX2 firmware"):
-            run_command(f"/usr/sbin/fxload -t fx2lp -I fx2.ihx -D {path}")
-        device = find_device(0x04b4, 0x1003, None, "Cy-stream")
-        handle = device.open()
-        handle.claimInterface(0)
-        test_usb_hs_speed('TARGET-C', handle, 2, Range(35, 45))
-        FX2_EN.low()
+        # Test USB through EUT to Tycho FX2 device.
+        test_fx2()
         # Connect supply to CONTROL alone, disconnecting from TARGET-C.
         connect_boost_supply_to('CONTROL')
 

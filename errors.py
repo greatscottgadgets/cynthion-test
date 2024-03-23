@@ -31,6 +31,7 @@ for code, name in (
     ('BTN', 'ButtonError'),
     ('CBL', 'CableError'),
     ('USB', 'USBCommsError'),
+    ('FX2', 'FX2Error'),
 ):
     globals()[name] = type(name, (CynthionTestError,), {'code': code})
 
@@ -38,6 +39,7 @@ for code, name in (
 USBCommsError.device = "EUT"
 GF1Error.device = "GreatFET"
 BMPError.device = "Black Magic Probe"
+FX2Error.device = "Tycho FX2"
 
 # Override __init__ method in GF1Error to mark the GF1 no longer usable.
 def __init__(self, msg):
