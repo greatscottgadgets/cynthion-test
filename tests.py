@@ -743,7 +743,7 @@ def run_self_test(apollo):
             with task(description):
                 try:
                     method(apollo)
-                except Exception:
+                except AssertionError:
                     raise SelfTestError(f"{description} self-test failed")
         with task("PMOD I/O"):
             for value in (0x00, 0xFF, 0xAA, 0x55):
