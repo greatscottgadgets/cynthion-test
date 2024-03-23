@@ -61,8 +61,12 @@ def wrap_exception(exc, usb_err_type=USBCommsError):
     elif isinstance(exc, KeyboardInterrupt):
         raise TestStoppedError("Test stopped by keyboard interrupt.")
     elif isinstance(exc, usb_exceptions):
-        raise usb_err_type(
-            f"{usb_err_type.device} USB error: {exc.strerror}")
+        if hasattr(exc, 'strerror'):
+            raise usb_err_type(
+                f"{usb_err_type.device} USB error: {exc.strerror}")
+        else:
+            raise usb_err_type(
+                f"{usb_err_type.device} USB error: {str(exc)}")
     else:
         raise UnexpectedError(str(exc))
 
