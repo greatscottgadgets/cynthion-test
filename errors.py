@@ -48,13 +48,13 @@ GF1Error.__init__ = __init__
 Takes an exception and if it is not a CynthionTestError, raises a
 suitable CynthionTestError wrapper.
 """
-def wrap_exception(exc, usb_err_type=None):
+def wrap_exception(exc, usb_err_type=USBCommsError):
     usb_exceptions = (usb.USBError, usb1.USBError)
     if isinstance(exc, CynthionTestError):
         return
     elif isinstance(exc, KeyboardInterrupt):
         raise TestStoppedError("Test stopped by keyboard interrupt.")
-    elif usb_err_type is not None and isinstance(exc, usb_exceptions):
+    elif isinstance(exc, usb_exceptions):
         raise usb_err_type(
             f"{usb_err_type.device} USB error: {exc.strerror}")
     else:
@@ -64,7 +64,7 @@ def wrap_exception(exc, usb_err_type=None):
 Context manager which converts non-CynthionTestError exceptions.
 """
 class error_conversion():
-    def __init__(self, usb_err_type=None):
+    def __init__(self, usb_err_type=USBCommsError):
         self.usb_err_type = usb_err_type
     def __enter__(self):
         pass
