@@ -5,8 +5,8 @@ import state
 
 colorama.init()
 
-def enable_numbering():
-    state.numbering = True
+def enable_numbering(enable):
+    state.numbering = enable
 
 def msg(text, end, flush=False):
     if state.numbering:

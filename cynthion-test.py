@@ -272,7 +272,7 @@ def test(user_present: bool):
 if __name__ == "__main__":
     user_present = 'unattended' not in sys.argv[1:]
     if user_present:
-        enable_numbering()
+        enable_numbering(True)
     try:
         with error_conversion():
             test(user_present)
@@ -281,4 +281,5 @@ if __name__ == "__main__":
         fail(error)
         if 'debug' in sys.argv[1:]:
             ipdb.post_mortem()
+    enable_numbering(False)
     reset()

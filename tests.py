@@ -157,14 +157,19 @@ def setup():
 def reset():
     if state.gf is None:
         return
-    for name, (position, output) in gpio_allocations.items():
-        pin = globals()[name]
-        if output is None:
-            pin.input()
-        elif output:
-            pin.high()
-        else:
-            pin.low()
+    try:
+        with error_conversion(GF1Error):
+            for name, (position, output) in gpio_allocations.items():
+                pin = globals()[name]
+                if output is None:
+                    pin.input()
+                elif output:
+                    pin.high()
+                else:
+                    pin.low()
+    except CynthionTestError as error:
+        print("Additionally, while resetting test system:")
+        fail(error)
 
 def pass_pressed():
     return not PASS.input()
