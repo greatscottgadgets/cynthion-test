@@ -136,7 +136,14 @@ def setup():
             if state.boost.read(CDC) != 0b11100000:
                 raise TychoError("Failed to communicate with DC-DC converter.")
             state.boost.disable()
-        set_boost_supply(5.0, 0.1)
+        try:
+            set_boost_supply(5.0, 0.1)
+        except SCPError:
+            raise TychoError("DC-DC converter detected a short circuit fault with no load.")
+        except OCPError:
+            raise TychoError("DC-DC converter detected an overcurrent fault with no load.")
+        except OVPError:
+            raise TychoError("DC-DC converter detected an overvoltage fault with no load.")
         with group("Checking for Black Magic Probe"):
             try:
                 bmp = find_device(0x1d50, 0x6018,

@@ -1,5 +1,5 @@
 from greatfet.interfaces.i2c.register_based import I2CRegisterBasedDevice
-from errors import error_conversion, GF1Error
+from errors import *
 
 VREF_L, VREF_H, IOUT_LIMIT, VOUT_SR, VOUT_FS, CDC, MODE, STATUS = range(8)
 
@@ -47,8 +47,8 @@ class TPS55288(I2CRegisterBasedDevice):
     def check_fault(self):
         status = self.read(STATUS)
         if status & SCP:
-            raise RuntimeError("Short circuit detected")
+            raise SCPError("Short circuit detected by power supply")
         if status & OCP:
-            raise RuntimeError("Overcurrent detected")
+            raise OCPError("Overcurrent detected by power supply")
         if status & OVP:
-            raise RuntimeError("Overvoltage detected")
+            raise OVPError("Overvoltage detected by power supply")
