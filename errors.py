@@ -12,29 +12,29 @@ class CynthionTestError(Exception):
 
 # Define subclasses with associated three-letter codes.
 for code, name in (
-    ('EXC', 'UnexpectedError'),
-    ('INT', 'TestStoppedError'),
-    ('USR', 'FailButtonError'),
-    ('DEP', 'DependencyError'),
-    ('GF1', 'GF1Error'),
-    ('BMP', 'BMPError'),
-    ('TYC', 'TychoError'),
-    ('PSU', 'PowerSupplyError'),
-    ('SCP', 'SCPError'),
-    ('OCP', 'OCPError'),
-    ('OVP', 'OVPError'),
-    ('CAL', 'CalibrationError'),
-    ('LOW', 'ValueLowError'),
-    ('HIG', 'ValueHighError'),
-    ('WRG', 'ValueWrongError'),
-    ('SHT', 'ShortError'),
-    ('CMD', 'CommandError'),
-    ('SLF', 'SelfTestError'),
-    ('REG', 'RegisterError'),
-    ('BTN', 'ButtonError'),
-    ('CBL', 'CableError'),
-    ('USB', 'USBCommsError'),
-    ('FX2', 'FX2Error'),
+    ('EXC', 'UnexpectedError'),  # An unhandled exception occured.
+    ('INT', 'TestStoppedError'), # Test stopped by keyboard interrupt.
+    ('USR', 'FailButtonError'),  # User pressed the FAIL button.
+    ('DEP', 'DependencyError'),  # Software dependency problem.
+    ('GF1', 'GF1Error'),         # Problem with GreatFET.
+    ('BMP', 'BMPError'),         # Problem with Black Magic Probe.
+    ('TYC', 'TychoError'),       # Problem with Tycho.
+    ('PSU', 'PowerSupplyError'), # Problem with the power supply.
+    ('SCP', 'SCPError'),         # Power supply detected a short circuit in EUT.
+    ('OCP', 'OCPError'),         # Power supply detected overcurrent in EUT.
+    ('OVP', 'OVPError'),         # Power supply detected overvoltage in EUT.
+    ('CAL', 'CalibrationError'), # Calibration data missing or invalid.
+    ('LOW', 'ValueLowError'),    # Measured value was too low.
+    ('HIG', 'ValueHighError'),   # Measured value was too high.
+    ('WRG', 'ValueWrongError'),  # Measured value was wrong.
+    ('SHT', 'ShortError'),       # Short circuit detected between EUT USB-C pins.
+    ('CMD', 'CommandError'),     # An external command failed.
+    ('SLF', 'SelfTestError'),    # An EUT self-test step failed.
+    ('REG', 'RegisterError'),    # An EUT register access did not succeed.
+    ('BTN', 'ButtonError'),      # An EUT button was not behaving as expected.
+    ('CBL', 'CableError'),       # A cable was not in the correct position.
+    ('USB', 'USBCommsError'),    # Problem with USB communications to the EUT.
+    ('FX2', 'FX2Error'),         # Problem with USB through the EUT to the FX2.
 ):
     globals()[name] = type(name, (CynthionTestError,), {'code': code})
 
