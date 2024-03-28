@@ -10,6 +10,9 @@ ATTR{idVendor}=="1209", ATTR{idProduct}=="0002", TAG+="uaccess"
 ATTR{idVendor}=="1209", ATTR{idProduct}=="0003", TAG+="uaccess"
 ATTR{idVendor}=="1209", ATTR{idProduct}=="0004", TAG+="uaccess"
 
+# Flash bridge
+ATTR{idVendor}=="1209", ATTR{idProduct}=="000f", TAG+="uaccess"
+
 # GreatFET
 ATTR{idVendor}=="1d50", ATTR{idProduct}=="60e6", TAG+="uaccess"
 

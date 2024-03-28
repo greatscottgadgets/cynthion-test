@@ -3,16 +3,16 @@
 	url = https://github.com/amaranth-lang/amaranth
 [submodule "dependencies/luna"]
 	path = dependencies/luna
-	url = https://github.com/martinling/luna
+	url = https://github.com/greatscottgadgets/luna
 [submodule "dependencies/apollo"]
 	path = dependencies/apollo
-	url = https://github.com/martinling/apollo
+	url = https://github.com/greatscottgadgets/apollo
 [submodule "dependencies/saturn-v"]
 	path = dependencies/saturn-v
-	url = https://github.com/martinling/saturn-v
+	url = https://github.com/greatscottgadgets/saturn-v
 [submodule "dependencies/cynthion"]
 	path = dependencies/cynthion
-	url = https://github.com/martinling/cynthion
+	url = https://github.com/greatscottgadgets/cynthion
 [submodule "dependencies/greatfet"]
 	path = dependencies/greatfet
 	url = https://github.com/greatscottgadgets/greatfet
