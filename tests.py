@@ -1,12 +1,4 @@
-from selftest import InteractiveSelftest, \
-    REGISTER_LEDS, REGISTER_CON_VBUS_EN, REGISTER_AUX_VBUS_EN, \
-    REGISTER_AUX_TYPEC_CTL_ADDR, REGISTER_AUX_TYPEC_CTL_VALUE, \
-    REGISTER_TARGET_TYPEC_CTL_ADDR, REGISTER_TARGET_TYPEC_CTL_VALUE, \
-    REGISTER_PWR_MON_ADDR, REGISTER_PWR_MON_VALUE, \
-    REGISTER_PASS_CONTROL, REGISTER_PASS_AUX, REGISTER_PASS_TARGET_C, \
-    REGISTER_AUX_SBU, REGISTER_TARGET_SBU, REGISTER_BUTTON_USER, \
-    REGISTER_PMOD_A_OUT, REGISTER_PMOD_B_IN
-from luna.gateware.applets.flash_bridge import FlashBridgeConnection
+from apollo_fpga.gateware.flash_bridge import FlashBridgeConnection
 from apollo_fpga.ecp5 import ECP5FlashBridgeProgrammer
 from apollo_fpga import ApolloDebugger
 from formatting import *
@@ -14,6 +6,7 @@ from errors import *
 from ranges import *
 from tycho import *
 from eut import *
+from selftest import *
 from time import time, sleep
 import state
 import usb1
@@ -562,8 +555,8 @@ def flash_firmware():
 def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
         return find_device(0x1d50, 0x615c,
-                           "Great Scott Gadgets",
-                           "Saturn-V",
+                           "Saturn-V Project",
+                           "Cynthion Bootloader",
                            state.mcu_serial)
 
 def test_apollo_present():
@@ -578,7 +571,7 @@ def test_apollo_present():
 
 def test_bridge_present():
     with group(f"Checking for flash bridge"):
-        return find_device(0x1d50, 0x615b, "LUNA", "Configuration Flash bridge")
+        return find_device(0x1209, 0x000f, "LUNA", "Configuration Flash bridge")
 
 def test_analyzer_present():
     with group(f"Checking for analyzer"):
@@ -754,9 +747,7 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
 
 def run_self_test(apollo):
     with group("Running self test"):
-        selftest = InteractiveSelftest()
-        selftest._MustUse__used = True
-        selftest.dut = apollo
+        selftest = AssistedTester(apollo)
         for method in [
             selftest.test_debug_connection,
             selftest.test_sideband_phy,
@@ -803,7 +794,7 @@ def test_usb_hs(port):
 
     with group(f"Testing USB HS comms on {info(port)}"):
         connect_host_to(port)
-        device = find_device(0x1209, pids[port], "LUNA", "IN speed test")
+        device = find_device(0x1209, pids[port], "LUNA", "speed test")
         handle = device.open()
         handle.claimInterface(0)
         test_usb_hs_speed(port, handle, 1, Range(46, 50))
@@ -1243,7 +1234,7 @@ def test_user_button(apollo):
 def request_control_handoff_to_mcu(handle):
     with task(f"Requesting FPGA handoff {info('CONTROL')} port to MCU"):
         handle.controlWrite(
-            usb1.TYPE_VENDOR | usb1.RECIPIENT_DEVICE, 0xF0, 0, 0, b'', 1)
+            usb1.TYPE_VENDOR | usb1.RECIPIENT_INTERFACE, 0xF0, 0, 1, b'', 1)
 
 def test_target_a_cable(required):
     correct = "connected" if required else "disconnected"
