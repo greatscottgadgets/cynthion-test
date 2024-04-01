@@ -203,6 +203,7 @@ def load_calibration():
             'greatfet_serial',
             'voltage_scale_lower',
             'voltage_scale_upper',
+            'current_offset',
         ):
             if field not in state.calibration:
                 raise CalibrationError(
@@ -376,7 +377,8 @@ def test_boost_current(expected):
     mux_disconnect()
     shunt_voltage = cdc_voltage * 0.05
     shunt_resistance = 0.01
-    shunt_current = max(shunt_voltage / shunt_resistance - 0.06, 0)
+    offset = state.calibration['current_offset']
+    shunt_current = max(shunt_voltage / shunt_resistance - offset, 0)
     channel = vbus_channels[state.boost_port]
     return test_value("current", channel, shunt_current, 'A', expected)
 

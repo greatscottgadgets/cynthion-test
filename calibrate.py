@@ -19,6 +19,10 @@ def calibrate():
         scale_low = 5.0 / test_vbus('TARGET-C', Range(4.9, 5.1))
         item(f"Calibration factor: {info(scale_low)}")
 
+    with group("Calibrating current offset"):
+        current_offset = test_boost_current(Range(0, 0.15))
+        item(f"Offset: {info(current_offset)}")
+
     # Increase voltage to 15V and repeat.
     with group("Calibrating high range"):
         set_boost_supply(15.0, 0.1)
@@ -30,6 +34,7 @@ def calibrate():
         greatfet_serial=state.gf.serial_number(),
         voltage_scale_lower=scale_low,
         voltage_scale_upper=scale_high,
+        current_offset=current_offset,
     )
     pickle.dump(calibration, open('calibration.dat', 'wb'))
 

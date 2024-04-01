@@ -28,5 +28,6 @@ boost_port = None
 calibration = dict(
     greatfet_serial = None,
     voltage_scale_upper = 1.0,
-    voltage_scale_lower = 1.0
+    voltage_scale_lower = 1.0,
+    current_offset = 0.0,
 )
