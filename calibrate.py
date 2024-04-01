@@ -27,6 +27,7 @@ def calibrate():
 
     # Write out calibration.
     calibration = dict(
+        greatfet_serial=state.gf.serial_number(),
         voltage_scale_lower=scale_low,
         voltage_scale_upper=scale_high,
     )

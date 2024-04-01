@@ -26,6 +26,7 @@ boost_port = None
 
 # Calibration data.
 calibration = dict(
+    greatfet_serial = None,
     voltage_scale_upper = 1.0,
     voltage_scale_lower = 1.0
 )

@@ -200,12 +200,15 @@ def load_calibration():
         except Exception:
             raise CalibrationError("Loading calibration file failed")
         for field in (
+            'greatfet_serial',
             'voltage_scale_lower',
             'voltage_scale_upper',
         ):
             if field not in state.calibration:
                 raise CalibrationError(
                     f"Field '{field}' not found in calibration data")
+        if state.calibration['greatfet_serial'] != state.gf.serial_number():
+            raise CalibrationError("Calibration data is for a different tester")
 
 class short_check():
 
