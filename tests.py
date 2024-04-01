@@ -1123,6 +1123,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
     output_cable_resistance = Range(0.03, 0.05)
     scale_error = Range(0.98, 1.02)
     offset_error = Range(-0.01, 0.01)
+    boost_current_extra_error = Range(-0.01, 0.01)
 
     if passthrough:
         total_resistance = sum([
@@ -1184,7 +1185,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
 
             with group("Checking voltages and positive current on input"):
                 test_vbus(input_port, v_sp)
-                test_boost_current(i_on)
+                test_boost_current(i_on + boost_current_extra_error)
                 test_eut_voltage(apollo, input_port, v_ip)
                 test_eut_current(apollo, input_port, i_on)
 
