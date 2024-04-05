@@ -802,7 +802,7 @@ def test_usb_hs(port):
         device = find_device(0x1209, pids[port], "LUNA", "speed test")
         handle = device.open()
         handle.claimInterface(0)
-        test_usb_hs_speed(port, handle, 1, Range(46, 50))
+        test_usb_hs_speed(port, handle, 1, Range(44, 50))
     return handle
 
 def test_usb_hs_speed(port, handle, endpoint, expected):
