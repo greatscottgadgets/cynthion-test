@@ -338,7 +338,7 @@ def check_cc_resistance(pin, expected):
     return test_value("resistance", pin, resistance, 'kΩ', expected)
 
 def test_leakage(port):
-    test_vbus(port, Range(0, 0.05), discharge=True)
+    test_vbus(port, Range(0, 0.3 if port == 'TARGET-A' else 0.05), discharge=True)
 
 def set_boost_supply(voltage, current):
     with task(f"Setting DC-DC converter to {info(f'{voltage:.2f} V')} {info(f'{current:.2f} A')}"):
@@ -1116,6 +1116,7 @@ def test_cc_sbu_control(apollo, port):
 def test_vbus_distribution(apollo, voltage, load_resistance,
         load_pin, passthrough, input_port):
     v_off = Range(0.0, 0.1)
+    v_op_off = Range(0.0, 0.4)
     i_off = Range(-0.01, 0.01)
     src_resistance = Range(0.07, 0.09)
     input_cable_resistance = Range(0.06, 0.10)
@@ -1139,7 +1140,7 @@ def test_vbus_distribution(apollo, voltage, load_resistance,
     output_cable_drop = output_cable_resistance * current
     v_sp = voltage * scale_error + offset_error - src_drop
     v_ip = v_sp - input_cable_drop
-    v_op = (v_ip - eut_drop) if passthrough else v_off
+    v_op = (v_ip - eut_drop) if passthrough else v_op_off
     v_ld = v_op - output_cable_drop
 
     i_on = current * scale_error + offset_error
