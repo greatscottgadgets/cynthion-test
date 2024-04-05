@@ -17,7 +17,7 @@ phy_supplies = (
 fpga_leds = (
     ('D7_Vf', 0.65, 0.85), # OSVX0603C1E, Purple
     ('D6_Vf', 0.70, 0.90), # ORH-B36G, Blue
-    ('D5_Vf', 0.95, 1.15), # ORH-G36G, Green
+    ('D5_Vf', 0.95, 1.20), # ORH-G36G, Green
     ('D4_Vf', 1.35, 1.55), # E6C0603UYAC1UDA, Yellow
     ('D3_Vf', 1.35, 1.55), # E6C0603SEAC1UDA, Orange
     ('D2_Vf', 1.40, 1.60)) # OSR50603C1E, Red
