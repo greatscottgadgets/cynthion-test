@@ -483,9 +483,6 @@ def discharge(port):
     DISCHARGE.low()
 
 def test_clock():
-    # Test disabled pending Sasserides-A r1.0.1 boards with clock buffer.
-    todo(f"Checking frequency on {info('CLK')}")
-    return
     reference_hz = 204000000 // 10
     target_hz = 60000000
     tolerance_ppm = 100
