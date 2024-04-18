@@ -81,6 +81,15 @@ def setup():
         with group("Checking software dependencies"):
             check_command("/usr/bin/gdb-multiarch")
             check_command("/usr/sbin/fxload")
+            with task("Checking for udev rules"):
+                try:
+                    file = open("/etc/udev/rules.d/60-tycho.rules", "r")
+                except OSError:
+                    raise DependencyError("Required udev rules not installed. Please run 'make install-udev'.")
+                rules = file.readlines()
+                current_rules = open("60-tycho.rules", "r").readlines()
+                if rules != current_rules:
+                    raise DependencyError("Required udev rules not up to date. Please run 'make install-udev'.")
         with group("Checking for GreatFET"):
             try:
                 find_device(0x1d50, 0x60e6,
