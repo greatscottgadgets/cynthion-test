@@ -455,9 +455,12 @@ def test_voltage(channel, expected, discharge=False):
         DISCHARGE.low()
     return test_value("voltage", channel, voltage, 'V', expected)
 
+def high_or_low(level):
+    return 'high' if level else 'low'
+
 def set_pin(pin, level):
     required = ('input' if level is None else
-        'output high' if level else 'output low')
+        'output ' + high_or_low(level))
     with task(f"Setting pin {info(pin)} to {info(required)}"):
         pin = globals()[pin]
         if level is None:
@@ -468,10 +471,10 @@ def set_pin(pin, level):
             pin.low()
 
 def test_pin(pin, level):
-    required = 'high' if level else 'low'
+    required = high_or_low(level)
     with task(f"Checking pin {info(pin)} is {info(required)}"):
         value = globals()[pin].input()
-        found = 'high' if value else 'low'
+        found = high_or_low(value)
         if value != level:
             raise ValueWrongError(f"Pin {pin} is {found}, should be {required}")
 
