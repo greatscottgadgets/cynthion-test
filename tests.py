@@ -759,7 +759,7 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
             result(device.getSerialNumber())
     return device
 
-def run_self_test(apollo):
+def run_self_test(apollo, test_target_monitor):
     with group("Running self test"):
         selftest = AssistedTester(apollo)
         for method in [
@@ -786,6 +786,35 @@ def run_self_test(apollo):
                     raise SelfTestError(
                         f"Wrote 0x{value:02X} to PMOD A "
                         f"but read back 0x{readback:02X} from PMOD B")
+        if not test_target_monitor:
+            return
+        with group("TARGET D+/D- sensing"):
+            connect_boost_supply_to('CONTROL', 'TARGET-C')
+            for func, otg, io, dp, dm, desc in (
+                (0x41, 0x06, 0x06, 0, 0, "D+/D- pulled low"),
+                (0x45, 0x04, 0x04, 0, 1, "D+ pulled low, D- pulled high"),
+                (0x45, 0x04, 0x06, 1, 0, "D+ pulled high, D- pulled low"),
+            ):
+                with task(f"Configuring PHY with {desc}"):
+                    write_register(apollo, REGISTER_TARGET_ADDR, 0x04)
+                    write_register(apollo, REGISTER_TARGET_VALUE, func)
+                    write_register(apollo, REGISTER_TARGET_ADDR, 0x0A)
+                    write_register(apollo, REGISTER_TARGET_VALUE, otg)
+                    write_register(apollo, REGISTER_TARGET_ADDR, 0x39)
+                    write_register(apollo, REGISTER_TARGET_VALUE, io)
+                with task(f"Checking FPGA D+ pin is {info(high_or_low(dp))}"):
+                    dp_read = read_register(apollo, REGISTER_SENSE_DP)
+                    if dp_read != dp:
+                        raise ValueWrongError("FPGA D+ sense pin was " +
+                            high_or_low(dp_read) + ", expected " +
+                            high_or_low(dp))
+                with task(f"Checking FPGA D- pin is {info(high_or_low(dm))}"):
+                    dm_read = read_register(apollo, REGISTER_SENSE_DM)
+                    if dm_read != dm:
+                        raise ValueWrongError("FPGA D- sense pin was " +
+                            high_or_low(dm_read) + ", expected " +
+                            high_or_low(dm))
+            connect_boost_supply_to('CONTROL')
 
 def test_fx2():
     FX2_EN.high()
