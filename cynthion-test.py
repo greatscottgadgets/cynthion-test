@@ -132,7 +132,7 @@ def test(user_present: bool):
     # - PMOD loopback test.
     # - FPGA sensing of target D+/D-, driven by target PHY.
     # 
-    run_self_test(apollo)
+    run_self_test(apollo, user_present)
 
     # Check that the FPGA can control the supply selection.
     test_supply_selection(apollo)

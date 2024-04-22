@@ -27,6 +27,9 @@ REGISTER_BUTTON_USER            = 35
 REGISTER_PMOD_A_OUT             = 36
 REGISTER_PMOD_B_IN              = 37
 
+REGISTER_SENSE_DP               = 38
+REGISTER_SENSE_DM               = 39
+
 
 class AssistedSelftestDevice(SelftestDevice):
 
@@ -103,6 +106,12 @@ class AssistedSelftestDevice(SelftestDevice):
         pmod_out_reg = registers.add_register(REGISTER_PMOD_A_OUT, size=8)
         m.d.comb += pmod_out.eq(pmod_out_reg)
         registers.add_sfr(REGISTER_PMOD_B_IN, read=pmod_in)
+
+        # D+/D- sense registers.
+        usb_dp = platform.request("target_usb_dp", 0, dir='i').i
+        usb_dm = platform.request("target_usb_dm", 0, dir='i').i
+        registers.add_sfr(REGISTER_SENSE_DP, read=usb_dp)
+        registers.add_sfr(REGISTER_SENSE_DM, read=usb_dm)
 
         return m
 
