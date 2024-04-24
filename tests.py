@@ -53,6 +53,12 @@ mon_current_registers = {
     'TARGET-A': 0x0B,
 }
 
+phy_registers = {
+    'CONTROL': REGISTER_CONTROL_ADDR,
+    'AUX': REGISTER_AUX_ADDR,
+    'TARGET': REGISTER_TARGET_ADDR,
+}
+
 class Pin:
     def __init__(self, inner):
         self.inner = inner
@@ -759,6 +765,18 @@ def find_device(vid, pid, mfg=None, prod=None, serial=None, timeout=3):
             result(device.getSerialNumber())
     return device
 
+def test_phy_vbus(apollo, phy, expected):
+    with task(f"Checking {info(phy)} PHY reads VBUS as " +
+              info(high_or_low(expected))):
+        reg = phy_registers[phy]
+        write_register(apollo, reg, 0x13)
+        status = read_register(apollo, reg + 1)
+        vbus = bool(status & 0x04)
+        if vbus != expected:
+            raise ValueWrongError("CONTROL PHY reads VBUS as " +
+                high_or_low(vbus) + ", expected " +
+                high_or_low(expected))
+
 def run_self_test(apollo, test_target_monitor):
     with group("Running self test"):
         selftest = AssistedTester(apollo)
@@ -786,6 +804,13 @@ def run_self_test(apollo, test_target_monitor):
                     raise SelfTestError(
                         f"Wrote 0x{value:02X} to PMOD A "
                         f"but read back 0x{readback:02X} from PMOD B")
+        with group("VBUS sensing"):
+            for phy, expected in (('CONTROL', 1), ('AUX', 0), ('TARGET', 0)):
+                test_phy_vbus(apollo, phy, expected)
+            connect_boost_supply_to('CONTROL', 'AUX', 'TARGET-C')
+            for phy, expected in (('AUX', 1), ('TARGET', 1)):
+                test_phy_vbus(apollo, phy, expected)
+            connect_boost_supply_to('CONTROL')
         if not test_target_monitor:
             return
         with group("TARGET D+/D- sensing"):
