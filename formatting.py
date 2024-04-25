@@ -1,5 +1,5 @@
 from colorama import Fore, Back, Style
-from errors import wrap_exception
+from errors import wrap_exception, USBCommsError
 import colorama
 import state
 
@@ -55,6 +55,19 @@ def fail(err):
     print()
     print(err.msg)
     print()
+    if isinstance(err, USBCommsError):
+        logfile = '/var/log/kern.log'
+        prefix = 'kernel: '
+        count = 10
+        try:
+            log_lines = open(logfile, 'r').readlines()
+            print(f"Last {count} lines of {logfile}:\n")
+            for line in log_lines[-count:]:
+                start = line.find(prefix) + len(prefix)
+                print(line.rstrip()[start:])
+        except IOError as e:
+            print(f"Failed to read {logfile}: {e.strerror}")
+        print()
 
 class group():
     def __init__(self, text):
