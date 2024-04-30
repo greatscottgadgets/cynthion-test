@@ -1,15 +1,18 @@
 from colorama import Fore, Back, Style
 from errors import wrap_exception, USBCommsError
+from time import strftime
 import colorama
 import state
 import os
 import re
+import sys
 
 colorama.init()
 
 if filename := os.environ.get('CYNTHION_TEST_LOG'):
     logfile = open(filename, 'a')
     ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    print(strftime("%Y-%m-%d %H:%M:%S ") + ' '.join(sys.argv), file=logfile)
 else:
     logfile = None
 
