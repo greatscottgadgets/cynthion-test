@@ -267,9 +267,12 @@ if __name__ == "__main__":
         with error_conversion():
             test(user_present)
             ok("All tests completed")
+            retcode = 0
     except CynthionTestError as error:
+        retcode = 1
         fail(error)
         if 'debug' in sys.argv[1:]:
             ipdb.post_mortem()
     enable_numbering(False)
     reset()
+    sys.exit(retcode)
