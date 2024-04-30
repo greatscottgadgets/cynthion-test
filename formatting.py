@@ -14,6 +14,7 @@ else:
     logfile = None
 
 def log(*args, **kwargs):
+    kwargs['flush'] = True
     print(*args, **kwargs)
     if logfile is not None:
         print(*(strip(arg) for arg in args), file=logfile, **kwargs)
@@ -24,7 +25,7 @@ def strip(text):
 def enable_numbering(enable):
     state.numbering = enable
 
-def msg(text, end, flush=False):
+def msg(text, end):
     if state.numbering:
         state.step[-1] += 1
         step_text = ".".join(str(s) for s in state.step)
@@ -32,7 +33,7 @@ def msg(text, end, flush=False):
         prefix = Fore.YELLOW + step_text + Style.RESET_ALL + "│ "
     else:
         prefix = ""
-    log(prefix + ("  " * state.indent ) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
+    log(prefix + ("  " * state.indent ) + "• " + text + Style.RESET_ALL, end=end)
 
 def item(text):
     msg(text, "\n")
@@ -106,7 +107,7 @@ class task():
     def __init__(self, text):
         self.text = text
     def __enter__(self):
-        msg(self.text, "... ", flush=True)
+        msg(self.text, "... ")
         return self
     def __exit__(self, exc_type, exc_value, exc_tb):
         if exc_type is None:
