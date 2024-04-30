@@ -2,11 +2,24 @@ from colorama import Fore, Back, Style
 from errors import wrap_exception, USBCommsError
 import colorama
 import state
+import os
+import re
 
 colorama.init()
 
+if filename := os.environ.get('CYNTHION_TEST_LOG'):
+    logfile = open(filename, 'a')
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+else:
+    logfile = None
+
 def log(*args, **kwargs):
     print(*args, **kwargs)
+    if logfile is not None:
+        print(*(strip(arg) for arg in args), file=logfile, **kwargs)
+
+def strip(text):
+    return ansi_escape.sub('', text)
 
 def enable_numbering(enable):
     state.numbering = enable
