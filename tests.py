@@ -183,7 +183,7 @@ def reset():
                 else:
                     pin.low()
     except CynthionTestError as error:
-        print("Additionally, while resetting test system:")
+        log("Additionally, while resetting test system:")
         fail(error)
 
 def pass_pressed():

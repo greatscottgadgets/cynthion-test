@@ -1,14 +1,34 @@
 from colorama import Fore, Back, Style
 from errors import wrap_exception, USBCommsError
+from time import strftime
 import colorama
 import state
+import os
+import re
+import sys
 
 colorama.init()
+
+if filename := os.environ.get('CYNTHION_TEST_LOG'):
+    logfile = open(filename, 'a')
+    ansi_escape = re.compile(r'\x1B(?:[@-Z\\-_]|\[[0-?]*[ -/]*[@-~])')
+    print(strftime("%Y-%m-%d %H:%M:%S ") + ' '.join(sys.argv), file=logfile)
+else:
+    logfile = None
+
+def log(*args, **kwargs):
+    kwargs['flush'] = True
+    print(*args, **kwargs)
+    if logfile is not None:
+        print(*(strip(arg) for arg in args), file=logfile, **kwargs)
+
+def strip(text):
+    return ansi_escape.sub('', text)
 
 def enable_numbering(enable):
     state.numbering = enable
 
-def msg(text, end, flush=False):
+def msg(text, end):
     if state.numbering:
         state.step[-1] += 1
         step_text = ".".join(str(s) for s in state.step)
@@ -16,7 +36,7 @@ def msg(text, end, flush=False):
         prefix = Fore.YELLOW + step_text + Style.RESET_ALL + "│ "
     else:
         prefix = ""
-    print(prefix + ("  " * state.indent ) + "• " + text + Style.RESET_ALL, end=end, flush=flush)
+    log(prefix + ("  " * state.indent ) + "• " + text + Style.RESET_ALL, end=end)
 
 def item(text):
     msg(text, "\n")
@@ -28,46 +48,46 @@ def info(text):
     return Fore.CYAN + str(text) + Style.RESET_ALL
 
 def result(text):
-    print(info(text) + ", ", end="")
+    log(info(text) + ", ", end="")
 
 def ask(text):
-    print()
-    print(
+    log()
+    log(
         Style.BRIGHT +
         Fore.CYAN + " === Please " + text + " and press " +
         Fore.GREEN + "PASS" + Fore.CYAN + " or " +
         Fore.RED + "FAIL" + Fore.CYAN + " === " +
         Style.RESET_ALL)
-    print()
+    log()
 
 def ok(text):
-    print()
-    print(Fore.GREEN + "PASS" + Style.RESET_ALL + ": " + text)
-    print()
+    log()
+    log(Fore.GREEN + "PASS" + Style.RESET_ALL + ": " + text)
+    log()
 
 def fail(err):
     if state.numbering:
         step_text = err.step + '-'
     else:
         step_text = ''
-    print()
-    print(Style.BRIGHT + Fore.RED + "FAIL " + Fore.YELLOW + step_text + err.code + Style.RESET_ALL)
-    print()
-    print(err.msg)
-    print()
+    log()
+    log(Style.BRIGHT + Fore.RED + "FAIL " + Fore.YELLOW + step_text + err.code + Style.RESET_ALL)
+    log()
+    log(err.msg)
+    log()
     if isinstance(err, USBCommsError):
         logfile = '/var/log/kern.log'
         prefix = 'kernel: '
         count = 10
         try:
             log_lines = open(logfile, 'r').readlines()
-            print(f"Last {count} lines of {logfile}:\n")
+            log(f"Last {count} lines of {logfile}:\n")
             for line in log_lines[-count:]:
                 start = line.find(prefix) + len(prefix)
-                print(line.rstrip()[start:])
+                log(line.rstrip()[start:])
         except IOError as e:
-            print(f"Failed to read {logfile}: {e.strerror}")
-        print()
+            log(f"Failed to read {logfile}: {e.strerror}")
+        log()
 
 class group():
     def __init__(self, text):
@@ -90,11 +110,11 @@ class task():
     def __init__(self, text):
         self.text = text
     def __enter__(self):
-        msg(self.text, "... ", flush=True)
+        msg(self.text, "... ")
         return self
     def __exit__(self, exc_type, exc_value, exc_tb):
         if exc_type is None:
-            print(Fore.GREEN + "OK" + Style.RESET_ALL)
+            log(Fore.GREEN + "OK" + Style.RESET_ALL)
         else:
-            print(Fore.RED + "FAIL" + Style.RESET_ALL)
+            log(Fore.RED + "FAIL" + Style.RESET_ALL)
         return False
