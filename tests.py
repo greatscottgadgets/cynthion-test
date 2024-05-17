@@ -591,11 +591,17 @@ def test_apollo_present():
 
 def test_bridge_present():
     with group(f"Checking for flash bridge"):
-        return find_device(0x1209, 0x000f, "LUNA", "Configuration Flash bridge")
+        return find_device(0x1209, 0x000f,
+                           "Apollo Project",
+                           "Configuration Flash Bridge")
 
 def test_analyzer_present():
     with group(f"Checking for analyzer"):
-        return find_device(0x1d50, 0x615b, "LUNA", "USB Analyzer")
+        serial = hex(state.flash_serial)[2:].lower()
+        return find_device(0x1d50, 0x615b,
+                           "Cynthion Project",
+                           "USB Analyzer",
+                           serial)
 
 def simulate_program_button():
     with group(f"Simulating pressing the {info('PROGRAM')} button"):
@@ -664,8 +670,8 @@ def test_flash_id(apollo, expected_mfg, expected_part):
                 if part != expected_part:
                     raise ValueWrongError(f"Wrong flash chip part ID: 0x{part:02X}")
             with task("Reading flash UID"):
-                uid = programmer.read_flash_uid()
-                result(f"0x{uid:08X}")
+                state.flash_serial = programmer.read_flash_uid()
+                result(f"0x{state.flash_serial:08X}")
 
 def flash_bitstream(apollo, filename):
     with group(f"Writing {info(filename)} to FPGA configuration flash"):
@@ -688,7 +694,7 @@ def configure_fpga(apollo, filename):
 
 def request_control_handoff_to_fpga(apollo):
     with task(f"Requesting MCU handoff {info('CONTROL')} port to FPGA"):
-        apollo.honor_fpga_adv()
+        apollo.allow_fpga_takeover_usb()
         apollo.close()
 
 def await_device(vid, pid, timeout):
