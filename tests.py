@@ -591,11 +591,15 @@ def test_apollo_present():
 
 def test_bridge_present():
     with group(f"Checking for flash bridge"):
-        return find_device(0x1209, 0x000f, "LUNA", "Configuration Flash bridge")
+        return find_device(0x1209, 0x000f,
+                           "Apollo Project",
+                           "Configuration Flash Bridge")
 
 def test_analyzer_present():
     with group(f"Checking for analyzer"):
-        return find_device(0x1d50, 0x615b, "LUNA", "USB Analyzer")
+        return find_device(0x1d50, 0x615b,
+                           "Cynthion Project",
+                           "USB Analyzer")
 
 def simulate_program_button():
     with group(f"Simulating pressing the {info('PROGRAM')} button"):
@@ -688,7 +692,7 @@ def configure_fpga(apollo, filename):
 
 def request_control_handoff_to_fpga(apollo):
     with task(f"Requesting MCU handoff {info('CONTROL')} port to FPGA"):
-        apollo.honor_fpga_adv()
+        apollo.allow_fpga_takeover_usb()
         apollo.close()
 
 def await_device(vid, pid, timeout):
