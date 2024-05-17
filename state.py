@@ -21,6 +21,9 @@ blackmagic_port = None
 # MCU serial number of the current EUT.
 mcu_serial = None
 
+# SPI Flash serial number of the current EUT.
+flash_serial = None
+
 # EUT port that the boost converter is currently supplying.
 boost_port = None
 
