@@ -2,7 +2,7 @@ MAJOR ?= 1
 MINOR ?= 4
 
 ENV_PYTHON=environment/bin/python
-ENV_INSTALL=environment/bin/pip install
+ENV_INSTALL=environment/bin/pip install --timeout 10000
 TIMESTAMP=environment/timestamp
 PLATFORM=cynthion.gateware.platform:CynthionPlatformRev$(MAJOR)D$(MINOR)
 BOARD_VARS=BOARD_REVISION_MAJOR=$(MAJOR) BOARD_REVISION_MINOR=$(MINOR)
