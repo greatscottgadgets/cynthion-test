@@ -76,6 +76,7 @@ environment:
 	python -m venv environment
 
 $(TIMESTAMP): environment
+	environment/bin/python -m pip install --upgrade pip
 	$(ENV_INSTALL) -e dependencies/pyfwup
 	$(ENV_INSTALL) -e dependencies/libgreat/host
 	$(ENV_INSTALL) -e dependencies/greatfet/host
