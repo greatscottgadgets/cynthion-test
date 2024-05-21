@@ -107,17 +107,7 @@ def test(user_present: bool):
     # Configure FPGA with test gateware.
     configure_fpga(apollo, 'selftest.bit')
 
-    # VBUS passthrough from Target-C to Target-A should now be on.
-    with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
-        # Apply VBUS power to TARGET-C.
-        connect_boost_supply_to('CONTROL', 'TARGET-C')
-        test_vbus('TARGET-C', Range(4.85, 5.05))
-
-        # Check the voltage now reaches the EUT's TARGET-A port.
-        test_voltage('TARGET_A_VBUS', Range(4.85, 5.05))
-
-        # Disconnect TARGET-C supply.
-        connect_boost_supply_to('CONTROL')
+    state.step[0] = 27
 
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
@@ -137,6 +127,22 @@ def test(user_present: bool):
     # - FPGA sensing of target D+/D-, driven by target PHY.
     # 
     run_self_test(apollo, user_present)
+
+    state.step[0] = 26
+
+    # VBUS passthrough from Target-C to Target-A should now be on.
+    with group(f"Testing with VBUS applied to {info('TARGET-C')}"):
+        # Apply VBUS power to TARGET-C.
+        connect_boost_supply_to('CONTROL', 'TARGET-C')
+        test_vbus('TARGET-C', Range(4.85, 5.05))
+
+        # Check the voltage now reaches the EUT's TARGET-A port.
+        test_voltage('TARGET_A_VBUS', Range(4.85, 5.05))
+
+        # Disconnect TARGET-C supply.
+        connect_boost_supply_to('CONTROL')
+
+    state.step[0] = 29
 
     # Check that the FPGA can control the supply selection.
     test_supply_selection(apollo)
