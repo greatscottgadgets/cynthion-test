@@ -121,6 +121,10 @@ def test(user_present: bool):
 
     # Check all PHY supply voltages.
     with group("Checking all PHY supply voltages"):
+        # Check +3V3 supply rail as sanity check before checking PHY supplies
+        state.step[1] = -1
+        (testpoint, minimum, maximum) = supplies[0]
+        test_voltage(testpoint, Range(minimum, maximum))
         for (testpoint, minimum, maximum) in phy_supplies:
             test_voltage(testpoint, Range(minimum, maximum))
 
