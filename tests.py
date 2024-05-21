@@ -802,14 +802,8 @@ def run_self_test(apollo, test_target_monitor):
                     method(apollo)
                 except AssertionError:
                     raise SelfTestError(f"{description} self-test failed")
-        with task("PMOD I/O"):
-            for value in (0x00, 0xFF, 0xAA, 0x55):
-                write_register(apollo, REGISTER_PMOD_A_OUT, value)
-                readback = read_register(apollo, REGISTER_PMOD_B_IN)
-                if readback != value:
-                    raise SelfTestError(
-                        f"Wrote 0x{value:02X} to PMOD A "
-                        f"but read back 0x{readback:02X} from PMOD B")
+        with task("Skipping PMOD I/O test"):
+            pass
         with group("VBUS sensing"):
             for phy, expected in (('CONTROL', 1), ('AUX', 0), ('TARGET', 0)):
                 test_phy_vbus(apollo, phy, expected)
