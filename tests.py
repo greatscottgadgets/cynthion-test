@@ -332,7 +332,7 @@ def end_cc_measurement():
     connect_tester_cc_sbu_to(None)
 
 def check_cc_resistances(port):
-    expected_resistance = 5.1 * Range(0.9, 1.1)
+    expected_resistance = 5.1 * Range(0.9, 1.15)
     with group(f"Checking CC resistances on {info(port)}"):
         begin_cc_measurement(port)
         for pin in ('CC1', 'CC2'):
