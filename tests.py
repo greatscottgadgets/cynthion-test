@@ -598,10 +598,20 @@ def test_bridge_present():
 def test_analyzer_present():
     with group(f"Checking for analyzer"):
         serial = hex(state.flash_serial)[2:].lower()
-        return find_device(0x1d50, 0x615b,
-                           "Cynthion Project",
-                           "USB Analyzer",
-                           serial)
+        try:
+            find_device(0x1d50, 0x615b,
+                        "Cynthion Project",
+                        "USB Analyzer",
+                        serial)
+        except:
+            state.step[1] -= 2
+            sleep(10)
+            simulate_reset_button()
+            sleep(1)
+            return find_device(0x1d50, 0x615b,
+                               "Cynthion Project",
+                               "USB Analyzer",
+                               serial)
 
 def simulate_program_button():
     with group(f"Simulating pressing the {info('PROGRAM')} button"):
