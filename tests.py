@@ -374,6 +374,7 @@ def connect_boost_supply_to(*ports):
             BOOST_VBUS_AUX.high()
         if 'TARGET-C' in ports:
             BOOST_VBUS_TC.high()
+        sleep(0.1)
         if 'CONTROL' not in ports:
             BOOST_VBUS_CON.low()
         if 'AUX' not in ports:
