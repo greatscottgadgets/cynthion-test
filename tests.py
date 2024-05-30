@@ -564,7 +564,7 @@ def flash_bootloader():
                      bits_left += 8
                  bits_left -= 5
                  index = (buffer >> bits_left) & 0x1F
-                 serial += chr(index + (ord('A') if index < 26 else ord('2')))
+                 serial += chr(index + (ord('A') if index < 26 else ord('2') - 26))
             state.mcu_serial = serial
             result(serial)
 
