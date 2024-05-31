@@ -26,18 +26,18 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'lsusb'
+                sh 'lsusb -v -d 1d50:6018'
                 sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --off && sleep 1s'
                 sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --off && sleep 1s'
                 sh 'usbhub --disable-i2c --hub 624C power state --port 1,3,4 --reset && sleep 1s'
-                sh 'lsusb'
+                sh 'lsusb -v -d 1d50:6018'
                 script {
                     try {
                         sh 'make unattended'
                     } catch (err) {
                         echo "Failed: ${err}"
                     } finally {
-                        sh 'lsusb'
+                        sh 'lsusb -v -d 1d50:6018'
                         sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --reset'
                         sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --reset'
                     }
