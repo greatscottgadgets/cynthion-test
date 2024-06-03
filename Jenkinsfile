@@ -11,7 +11,7 @@ pipeline {
         }
     }
     triggers {
-        cron(env.BRANCH_NAME == 'docker_bmp_fix' ? '0 0 * * 0' : '')
+        cron(env.BRANCH_NAME == 'docker_bmp_fix' ? '*/5 * * * *' : '')
     }
     options { timestamps () }
     stages {
@@ -26,22 +26,13 @@ pipeline {
         }
         stage('Test') {
             steps {
-                sh 'lsusb -v -d 1d50:6018'
+                sh 'lsusb'
                 sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --off && sleep 1s'
                 sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --off && sleep 1s'
-                sh 'usbhub --disable-i2c --hub 624C power state --port 1,3,4 --reset && sleep 1s'
+                sh 'usbhub --disable-i2c --hub 624C power state --port 1,3,4 --on && sleep 1s'
+                sh 'lsusb'
                 sh 'lsusb -v -d 1d50:6018'
-                script {
-                    try {
-                        sh 'make unattended'
-                    } catch (err) {
-                        echo "Failed: ${err}"
-                    } finally {
-                        sh 'lsusb -v -d 1d50:6018'
-                        sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --reset'
-                        sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --reset'
-                    }
-                }
+                sh 'make unattended'
             }
         }
     }
