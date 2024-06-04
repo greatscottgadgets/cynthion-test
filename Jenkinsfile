@@ -11,7 +11,7 @@ pipeline {
         }
     }
     triggers {
-        cron(env.BRANCH_NAME == 'docker_bmp_fix' ? '*/5 * * * *' : '')
+        cron(env.BRANCH_NAME == 'docker_bmp_fix' ? '0 0 1 1 *' : '')
     }
     options { timestamps () }
     stages {
