@@ -4,8 +4,8 @@ USER root
 
 # copy device calibration and udev rules files from jenkins controller
 RUN mkdir /etc/udev && mkdir /etc/udev/rules.d
-COPY --from=jenkins-jenkins /cyn_cal.dat /tmp/calibration.dat
-COPY --from=jenkins-jenkins /60-tycho.rules /etc/udev/rules.d/60-tycho.rules
+COPY --from=gsg-jenkins /cyn_cal.dat /tmp/calibration.dat
+COPY --from=gsg-jenkins /60-tycho.rules /etc/udev/rules.d/60-tycho.rules
 
 # Override interactive installations and install dependencies
 ENV DEBIAN_FRONTEND=noninteractive
