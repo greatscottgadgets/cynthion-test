@@ -1,17 +1,19 @@
 pipeline {
-    agent {
-        dockerfile {
-            args '''
-                --group-add=46 --group-add=20 --device-cgroup-rule="c 189:* rmw"
-                --device-cgroup-rule="c 166:* rmw" --net=host
-                --volume /run/udev/control:/run/udev/control
-                --volume /dev/bus/usb:/dev/bus/usb
-                --device /dev/serial/by-id/usb-Black_Magic_Debug_Black_Magic_Probe_v1.9.1_7BB0778C-if00
-            '''
-        }
-    }
+    agent any
     stages {
+        stage('Build Docker Image') {
+            steps {
+                sh 'docker build -t cynthion-test https://github.com/grvvy/cynthion-test.git#ppps_update'
+            }
+        }
         stage('Build') {
+            agent {
+                docker {
+                    image 'cynthion-test'
+                    reuseNode true
+                    args '--name cynthion-test_container'
+                }
+            }
             steps {
                 sh '''#!/bin/bash
                     git submodule init && git submodule update
@@ -21,15 +23,27 @@ pipeline {
             }
         }
         stage('Test') {
+            agent {
+                docker {
+                    image 'cynthion-test'
+                    reuseNode true
+                    args '''
+                        --name cynthion-test_container
+                        --group-add=46 --group-add=20 --device-cgroup-rule="c 189:* rmw"
+                        --device-cgroup-rule="c 166:* rmw" --net=host
+                        --volume /run/udev/control:/run/udev/control
+                        --volume /dev/bus/usb:/dev/bus/usb
+                        --device /dev/serial/by-id/usb-Black_Magic_Debug_Black_Magic_Probe_v1.9.1_7BB0778C-if00
+                    '''
+                }
+            }
             steps {
-                sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --off && sleep 1s'
-                sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --off && sleep 1s'
+                sh 'hubs all off'
                 retry(3) {
-                    sh 'usbhub --disable-i2c --hub 624C power state --port 1,3,4 --reset && sleep 1s'
+                    sh 'hubs cyntest_tycho cyntest_greatfet cyntest_bmp reset'
                     sh 'make unattended'
                 }
-                sh 'usbhub --disable-i2c --hub 624C power state --port 1,2,3,4 --reset'
-                sh 'usbhub --disable-i2c --hub D9D1 power state --port 1,2,3,4 --reset'
+                sh 'hubs all reset'
             }
         }
     }
