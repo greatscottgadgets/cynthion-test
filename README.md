@@ -33,8 +33,8 @@ This repository contains software for testing a [Cynthion](https://github.com/gr
 ## Setup
 
 ```sh
-# Check out the repository, including submodules:
-git clone --recurse-submodules https://github.com/greatscottgadgets/cynthion-test
+# Check out the repository:
+git clone https://github.com/greatscottgadgets/cynthion-test
 cd cynthion-test
 
 # Install pre-requisites
