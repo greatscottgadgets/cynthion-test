@@ -75,7 +75,7 @@ analyzer.bit: $(TIMESTAMP)
 environment:
 	python -m venv environment
 
-$(TIMESTAMP): environment
+$(TIMESTAMP): environment submodule-checkout
 	environment/bin/python -m pip install --upgrade pip
 	$(ENV_INSTALL) -e dependencies/pyfwup
 	$(ENV_INSTALL) -e dependencies/libgreat/host
@@ -99,3 +99,8 @@ clean:
 	rm -f $(BOOTLOADER)
 	rm -rf $(GF_FW)/build
 	rm -rf environment
+
+submodule-checkout:
+	git submodule init && git submodule update
+	cd dependencies/apollo && git submodule init && git submodule update && cd ../..
+	cd dependencies/greatfet && git submodule init && git submodule update && cd ../..
