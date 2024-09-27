@@ -20,12 +20,18 @@ RUN apt-get update && apt-get install -y \
     fxload \
     gdb-multiarch \
     git \
-    make \
+    jq \
     libusb-1.0-0-dev \
+    make \
     python-is-python3 \
     python3-pip \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
+
+# install latest from oss-cad-suite
+RUN curl -L $(curl -s "https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/latest" \
+    | jq --raw-output '.assets[].browser_download_url' | grep "linux-x64") --output oss-cad-suite-linux-x64.tgz \
+    && tar zxvf oss-cad-suite-linux-x64.tgz
 
 # Install USB hub PPPS dependencies
 RUN pip3 install python-dotenv git+https://github.com/CapableRobot/CapableRobot_USBHub_Driver --upgrade
@@ -36,6 +42,11 @@ RUN curl -L https://github.com/mvp/uhubctl/archive/refs/tags/v2.5.0.tar.gz > uhu
     && cd uhubctl-2.5.0 \
     && make \
     && make install
+
+USER jenkins
+
+# add oss-cad-suite to PATH for pip/source package installations
+ENV PATH="/root/.local/bin:/oss-cad-suite/bin:$PATH"
 
 # Inform Docker that the container is listening on port 8080 at runtime
 EXPOSE 8080
