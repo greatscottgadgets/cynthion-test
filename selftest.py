@@ -39,12 +39,12 @@ class AssistedSelftestDevice(SelftestDevice):
         registers = m.submodules.registers
 
         # VBUS enable registers.
-        con_vbus_reg = registers.add_register(REGISTER_CON_VBUS_EN, size=1, reset=True)
-        aux_vbus_reg = registers.add_register(REGISTER_AUX_VBUS_EN, size=1, reset=True)
+        con_vbus_reg = registers.add_register(REGISTER_CON_VBUS_EN, size=1, init=True)
+        aux_vbus_reg = registers.add_register(REGISTER_AUX_VBUS_EN, size=1, init=True)
 
-        con_thru_reg = registers.add_register(REGISTER_PASS_CONTROL, size=1, reset=False)
-        aux_thru_reg = registers.add_register(REGISTER_PASS_AUX, size=1, reset=False)
-        tc_thru_reg = registers.add_register(REGISTER_PASS_TARGET_C, size=1, reset=True)
+        con_thru_reg = registers.add_register(REGISTER_PASS_CONTROL, size=1, init=False)
+        aux_thru_reg = registers.add_register(REGISTER_PASS_AUX, size=1, init=False)
+        tc_thru_reg = registers.add_register(REGISTER_PASS_TARGET_C, size=1, init=True)
 
         m.d.comb += [
             platform.request("control_vbus_in_en", 0, dir="o").o.eq(con_vbus_reg),
@@ -79,11 +79,11 @@ class AssistedSelftestDevice(SelftestDevice):
         ]
 
         # SBU control registers.
-        aux_sbu_reg = registers.add_register(REGISTER_AUX_SBU, size=2, reset=0)
-        target_sbu_reg = registers.add_register(REGISTER_TARGET_SBU, size=2, reset=0)
+        aux_sbu_reg = registers.add_register(REGISTER_AUX_SBU, size=2, init=0)
+        target_sbu_reg = registers.add_register(REGISTER_TARGET_SBU, size=2, init=0)
         m.d.comb += [
-            Cat([aux_type_c.sbu2, aux_type_c.sbu1]).eq(aux_sbu_reg),
-            Cat([target_type_c.sbu2, target_type_c.sbu1]).eq(target_sbu_reg),
+            Cat([aux_type_c.sbu2.o, aux_type_c.sbu1.o]).eq(aux_sbu_reg),
+            Cat([target_type_c.sbu2.o, target_type_c.sbu1.o]).eq(target_sbu_reg),
         ]
 
         # User button register.

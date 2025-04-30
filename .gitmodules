@@ -1,6 +1,3 @@
-[submodule "dependencies/amaranth"]
-	path = dependencies/amaranth
-	url = https://github.com/amaranth-lang/amaranth
 [submodule "dependencies/luna"]
 	path = dependencies/luna
 	url = https://github.com/greatscottgadgets/luna
@@ -19,15 +16,12 @@
 [submodule "dependencies/python-usb-protocol"]
 	path = dependencies/python-usb-protocol
 	url = https://github.com/greatscottgadgets/python-usb-protocol
-[submodule "dependencies/amaranth-stdio"]
-	path = dependencies/amaranth-stdio
-	url = https://github.com/amaranth-lang/amaranth-stdio
-[submodule "dependencies/amaranth-boards"]
-	path = dependencies/amaranth-boards
-	url = https://github.com/amaranth-lang/amaranth-boards
 [submodule "dependencies/libgreat"]
 	path = dependencies/libgreat
 	url = https://github.com/greatscottgadgets/libgreat
 [submodule "dependencies/pyfwup"]
 	path = dependencies/pyfwup
 	url = https://github.com/greatscottgadgets/pyfwup
+[submodule "dependencies/luna-soc"]
+	path = dependencies/luna-soc
+	url = https://github.com/greatscottgadgets/luna-soc.git
