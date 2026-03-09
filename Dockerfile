@@ -28,7 +28,7 @@ RUN apt-get update && apt-get install -y \
     python3-venv \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip3 install python-dotenv --upgrade
+RUN pip3 install python-dotenv --upgrade --break-system-packages
 
 # install oss-cad-suite 2024-11-01
 RUN curl -L $(curl -s "https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/183038843" \
