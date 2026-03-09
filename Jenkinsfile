@@ -3,7 +3,7 @@ pipeline {
     stages {
         stage('Build Docker Image') {
             steps {
-                sh 'docker build -t cynthion-test github.com/greatscottgadgets/cynthion-test'
+                sh 'docker build -t cynthion-test https://github.com/greatscottgadgets/cynthion-test.git'
             }
         }
         stage('Build') {
@@ -35,6 +35,8 @@ pipeline {
                             --device /dev/bus/usb
                             --volume /run/udev/control:/run/udev/control
                             --net=host
+                            -v /tmp/req_pipe:/tmp/req_pipe
+                            -v /tmp/res_pipe:/tmp/res_pipe
                         '''
                 }
             }
