@@ -30,15 +30,7 @@ RUN apt-get update && apt-get install -y \
 
 RUN pip3 install python-dotenv --upgrade --break-system-packages
 
-# install oss-cad-suite 2024-11-01
-RUN curl -L $(curl -s "https://api.github.com/repos/YosysHQ/oss-cad-suite-build/releases/183038843" \
-    | jq --raw-output '.assets[].browser_download_url' | grep "linux-x64") --output oss-cad-suite-linux-x64-20241101.tgz \
-    && tar zxvf oss-cad-suite-linux-x64-20241101.tgz
-
 USER jenkins
-
-# add oss-cad-suite to PATH for pip/source package installations
-ENV PATH="/root/.local/bin:/oss-cad-suite/bin:$PATH"
 
 # Inform Docker that the container is listening on port 8080 at runtime
 EXPOSE 8080
