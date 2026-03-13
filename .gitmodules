@@ -31,3 +31,6 @@
 [submodule "dependencies/pyfwup"]
 	path = dependencies/pyfwup
 	url = https://github.com/greatscottgadgets/pyfwup
+[submodule "dependencies/luna-soc"]
+	path = dependencies/luna-soc
+	url = https://github.com/greatscottgadgets/luna-soc
