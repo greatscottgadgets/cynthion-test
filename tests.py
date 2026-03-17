@@ -110,7 +110,7 @@ def setup():
                 except Exception:
                     raise GF1Error(
                         "Could not connect to GreatFET. Check USB connections.")
-            expected = "git-v2021.2.1-65-g8d8be6f"
+            expected = "git-v2025.0.0-1-g78c06b4"
             with task(f"Checking GreatFET firmware version is {info(expected)}"):
                 with error_conversion(GF1Error):
                     version = state.gf.firmware_version()
@@ -576,13 +576,13 @@ def test_saturnv_present():
     with group(f"Checking for Saturn-V"):
         return find_device(0x1d50, 0x615c,
                            "Saturn-V Project",
-                           "Cynthion Bootloader",
+                           "Bootloader",
                            state.mcu_serial)
 
 def test_apollo_present():
     with group(f"Checking for Apollo"):
         find_device(0x1d50, 0x615c,
-                    "Great Scott Gadgets",
+                    "Apollo Project",
                     "Apollo Debugger",
                     state.mcu_serial)
         with task("Connecting to Apollo"):

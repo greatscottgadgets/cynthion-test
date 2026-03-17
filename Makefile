@@ -87,6 +87,7 @@ $(TIMESTAMP): environment submodule-checkout
 	$(ENV_INSTALL) -e dependencies/python-usb-protocol
 	$(ENV_INSTALL) libusb1==1.9.3 pyserial
 	$(ENV_INSTALL) --no-deps -e dependencies/luna
+	$(ENV_INSTALL) -e dependencies/luna-soc
 	$(ENV_INSTALL) tomli
 	$(ENV_INSTALL) --no-deps -e dependencies/cynthion/cynthion/python
 	$(ENV_INSTALL) colorama ipdb
