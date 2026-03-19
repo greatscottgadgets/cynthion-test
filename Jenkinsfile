@@ -19,6 +19,7 @@ pipeline {
             steps {
                 sh '''#!/bin/bash
                     cp /tmp/calibration.dat calibration.dat
+                    make submodule-checkout
                     make
                 '''
             }
