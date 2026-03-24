@@ -75,7 +75,7 @@ analyzer.bit: $(TIMESTAMP)
 environment:
 	python -m venv environment
 
-$(TIMESTAMP): environment submodule-checkout
+$(TIMESTAMP): environment
 	environment/bin/python -m pip install --upgrade pip
 	$(ENV_INSTALL) -e dependencies/pyfwup
 	$(ENV_INSTALL) -e dependencies/libgreat/host

@@ -40,6 +40,9 @@ cd cynthion-test
 # Install pre-requisites
 sudo apt install make python3-venv gdb-multiarch dfu-util fxload
 
+# Checkout the submodules:
+make submodule-checkout
+
 # Build the test environment:
 make
 
