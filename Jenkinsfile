@@ -1,6 +1,13 @@
 import org.jenkinsci.plugins.workflow.steps.FlowInterruptedException
 
 pipeline {
+    options {
+        throttleJobProperty(
+            categories: ['cynthion-named-container'],
+            throttleEnabled: true,
+            throttleOption: 'category',
+        )
+    }
     agent any
     stages {
         stage('Build Docker Image') {
@@ -44,29 +51,11 @@ pipeline {
                 }
             }
             steps {
-                retry(3) {
+                lock('HIL_hubs') {
                     script {
-                        try {
-                            // Allow 20 seconds for the USB hub port power server to respond
-                            timeout(time: 20, unit: 'SECONDS') {
-                                sh 'hubs all off'
-                                sh 'hubs cyntest_tycho cyntest_greatfet cyntest_bmp reset'
-                            }
-                        }  catch (FlowInterruptedException err) {
-                            // Check if the cause was specifically an exceeded timeout
-                            def cause = err.getCauses().get(0)
-                            if (cause instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout) {
-                                echo "USB hub port power server command timeout reached."
-                                throw err // Re-throw the exception to fail the build
-                            } else {
-                                echo "Build interrupted for another reason."
-                                throw err // Re-throw the exception to fail the build
-                            }
-                        } catch (Exception err) {
-                            echo "An unrelated error occurred: ${err.getMessage()}"
-                            throw err
-                        }
-                        sh 'make unattended'
+                        allOff()
+                        reset('cyntest_tycho cyntest_greatfet cyntest_bmp')
+                        runCommand(3, 5, 'MINUTES', "HIL Test", 'make unattended')
                     }
                 }
             }
@@ -78,6 +67,39 @@ pipeline {
                     deleteDirs: true,
                     disableDeferredWipeout: true,
                     notFailBuild: true)
+        }
+    }
+}
+
+def allOff() {
+    // Allow 20 seconds for the USB hub port power server to respond
+    runCommand(3, 20, 'SECONDS', 'USB hub port power server command', "hubs all off")
+}
+
+def reset(devices) {
+    // Allow 20 seconds for the USB hub port power server to respond
+    runCommand(3, 20, 'SECONDS', 'USB hub port power server command', "hubs ${devices} reset")
+}
+
+def runCommand(retries, time, unit, title, cmd) {
+    retry(retries) {
+        try {
+            timeout(time: time, unit: unit) {
+                sh "${cmd}"
+            }
+        } catch (FlowInterruptedException err) {
+            // Check if the cause was specifically an exceeded timeout
+            def cause = err.getCauses().get(0)
+            if (cause instanceof org.jenkinsci.plugins.workflow.steps.TimeoutStepExecution.ExceededTimeout) {
+                echo "${title} timeout reached."
+                throw err // Re-throw the exception to fail the build
+            } else {
+                echo "Build interrupted for another reason."
+                throw err // Re-throw the exception to fail the build
+            }
+        } catch (Exception err) {
+            echo "An unrelated error occurred: ${err.getMessage()}"
+            throw err
         }
     }
 }
